@@ -1,0 +1,2419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NARCOSCOPE — Investigation Workstation</title>
+<style>
+/* ============================================================
+   NARCOSCOPE design system — professional investigation UI
+   ============================================================ */
+:root{
+  --bg:#0b0e17; --bg2:#0e1220; --panel:#131827; --panel2:#171d2f; --panel3:#1b2236;
+  --line:#232b44; --line2:#2e3857;
+  --text:#dbe2f4; --text2:#aab4d6; --muted:#7c86a8;
+  --accent:#5b8cff; --accent2:#7aa2ff; --accent-dim:rgba(91,140,255,.12);
+  --ok:#3ecf8e; --warn:#f0a63c; --bad:#ef5b5b;
+  --cand:#e0a63c; --trusted:#3ecf8e; --rejected:#8a5560;
+  --node-person:#5b8cff; --node-org:#3ecf8e; --node-loc:#35c2c8;
+  --node-event:#b07cff; --node-case:#f0a63c; --node-other:#8a93b8;
+  --radius:10px; --radius-sm:7px;
+  --sidebar-w:236px; --topbar-h:56px;
+  --shadow:0 10px 30px rgba(0,0,0,.35);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,"Inter",Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:var(--font)}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:.2px}
+::selection{background:rgba(91,140,255,.3)}
+
+/* ---------- layout ---------- */
+#app{display:flex;min-height:100vh}
+#sidebar{width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;transition:width .18s ease;flex-shrink:0;z-index:40}
+#sidebar.collapsed{width:64px}
+#main{flex:1;min-width:0;display:flex;flex-direction:column}
+#topbar{height:var(--topbar-h);background:rgba(14,18,32,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 16px;position:sticky;top:0;z-index:30}
+#content{flex:1;padding:20px 22px 60px;max-width:1500px;width:100%}
+
+/* ---------- sidebar ---------- */
+.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;border-bottom:1px solid var(--line)}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--accent),#8a5bff);display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;letter-spacing:1px;flex-shrink:0}
+.brand .name{font-size:14px;font-weight:750;letter-spacing:3px;white-space:nowrap}
+.brand .name small{display:block;font-size:9px;color:var(--muted);letter-spacing:1.5px;font-weight:600}
+.side-collapse{display:flex;align-items:center;justify-content:center;padding:8px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px}
+nav.side{padding:10px 8px;overflow-y:auto;flex:1}
+nav.side .sec{font-size:10px;letter-spacing:1.6px;color:var(--muted);text-transform:uppercase;padding:14px 10px 6px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:11px;width:100%;padding:8px 10px;border:none;background:transparent;color:var(--text2);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:600;text-align:left;margin:1px 0;white-space:nowrap;transition:background .12s,color .12s}
+.nav-item:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.nav-item.active{background:var(--accent-dim);color:var(--accent2)}
+.nav-item .ico{width:18px;text-align:center;font-size:14px;flex-shrink:0}
+.nav-item .lbl{overflow:hidden;text-overflow:ellipsis}
+#sidebar.collapsed .nav-item .lbl,#sidebar.collapsed .sec,#sidebar.collapsed .brand .name,#sidebar.collapsed .brand small{display:none}
+#sidebar.collapsed .nav-item{justify-content:center;padding:10px}
+#sidebar.collapsed .brand{justify-content:center;padding:12px 8px}
+
+/* ---------- topbar ---------- */
+.search-trigger{flex:1;max-width:520px;position:relative}
+.search-trigger input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 34px 8px 34px;font-size:13px;outline:none}
+.search-trigger input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+.search-trigger .s-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+.search-trigger .s-kbd{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted);border:1px solid var(--line2);border-radius:4px;padding:1px 5px;font-family:var(--mono)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.top-btn{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);color:var(--text2);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer}
+.top-btn:hover{border-color:var(--line2);color:var(--text)}
+.top-btn .dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.workspace-pill{display:flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer;color:var(--text2);max-width:230px}
+.workspace-pill:hover{border-color:var(--line2)}
+.workspace-pill .w-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-chip{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:4px 10px 4px 4px;font-size:12px;color:var(--text2)}
+.user-chip .av{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#3a4a7a,#5b8cff);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+
+/* ---------- panels & cards ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.panel h2,.panel h3{font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:700}
+.panel h3{margin-bottom:8px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.page-head h1{font-size:22px;letter-spacing:.4px}
+.page-head .crumb{font-size:12px;color:var(--muted);margin-top:3px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden}
+.kpi .num{font-size:26px;font-weight:750;letter-spacing:.3px}
+.kpi .lab{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1.1px;margin-top:3px}
+.kpi .num small{font-size:13px;color:var(--muted);font-weight:600}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.55}
+.kpi.green::after{background:var(--ok)}
+.kpi.amber::after{background:var(--warn)}
+.kpi.purple::after{background:var(--node-event)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+
+/* ---------- tables / lists ---------- */
+table.list{width:100%;border-collapse:collapse;font-size:13px}
+table.list th{text-align:left;font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line2);font-weight:700}
+table.list td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.list tr:hover td{background:rgba(255,255,255,.02)}
+table.list tr.clickable{cursor:pointer}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;transition:border-color .12s}
+.card:hover{border-color:var(--line2)}
+.card .t{font-size:14px;font-weight:650}
+.card .s{font-size:12px;color:var(--muted);margin-top:3px}
+.card .m{font-size:12px;color:var(--text2);margin-top:8px;display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- badges ---------- */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:750;letter-spacing:.6px;text-transform:uppercase;border:1px solid transparent}
+.badge.PENDING,.badge.EDITED,.badge.CANDIDATE{background:rgba(240,166,60,.13);color:#f2bd6b;border-color:rgba(240,166,60,.35)}
+.badge.CONFIRMED,.badge.ACTIVE,.badge.TRUSTED,.badge.PROCESSED{background:rgba(62,207,142,.13);color:#5fd9a4;border-color:rgba(62,207,142,.35)}
+.badge.REJECTED{background:rgba(239,91,91,.13);color:#f08a8a;border-color:rgba(239,91,91,.35)}
+.badge.MAJOR{background:rgba(239,91,91,.14);color:#f08a8a;border-color:rgba(239,91,91,.4)}
+.badge.MODERATE{background:rgba(240,166,60,.14);color:#f2bd6b;border-color:rgba(240,166,60,.4)}
+.badge.MINOR{background:rgba(124,134,168,.14);color:#a8b2d4;border-color:rgba(124,134,168,.4)}
+.badge.neutral{background:rgba(124,134,168,.12);color:#a8b2d4;border-color:rgba(124,134,168,.3)}
+.badge.type{background:rgba(91,140,255,.12);color:#8fb0ff;border-color:rgba(91,140,255,.3)}
+.pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--panel3);color:var(--text2);border:1px solid var(--line)}
+.trust-chip{font-size:10px;font-weight:750;letter-spacing:.8px;text-transform:uppercase;padding:2px 8px;border-radius:6px}
+.trust-chip.trusted{background:rgba(62,207,142,.12);color:#5fd9a4;border:1px solid rgba(62,207,142,.35)}
+.trust-chip.candidate{background:rgba(240,166,60,.12);color:#f2bd6b;border:1px solid rgba(240,166,60,.35)}
+
+/* ---------- forms ---------- */
+label{display:block;font-size:11px;color:var(--muted);margin:12px 0 4px;letter-spacing:.5px;font-weight:600}
+input,select,textarea{width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--line2);background:var(--bg2);color:var(--text);font-size:13px;font-family:var(--font);outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+input:disabled,select:disabled{opacity:.5;cursor:not-allowed}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 55%,calc(100% - 11px) 55%;background-size:5px 5px;background-repeat:no-repeat;padding-right:28px}
+textarea{min-height:70px;resize:vertical}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0 14px}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--line2);background:var(--panel3);color:var(--text);font-size:12.5px;font-weight:650;cursor:pointer;transition:filter .12s,background .12s,border-color .12s}
+.btn:hover{filter:brightness(1.12)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ok{background:rgba(62,207,142,.15);border-color:rgba(62,207,142,.5);color:#5fd9a4}
+.btn.bad{background:rgba(239,91,91,.13);border-color:rgba(239,91,91,.45);color:#f08a8a}
+.btn.warn{background:rgba(240,166,60,.13);border-color:rgba(240,166,60,.45);color:#f2bd6b}
+.btn.ghost{background:transparent;border-color:var(--line2);color:var(--text2)}
+.btn.sm{padding:4px 9px;font-size:11.5px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:16px}
+.tab-btn{padding:8px 14px;font-size:12.5px;font-weight:650;border:none;background:transparent;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent2);border-bottom-color:var(--accent)}
+
+/* ---------- detail ---------- */
+.detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.detail-header h1{font-size:24px}
+.detail-header .sub{color:var(--muted);font-size:12.5px;margin-top:4px}
+.kv{font-size:12.5px;color:var(--muted);margin:3px 0}
+.kv b{color:var(--text);font-weight:650}
+.kv .mono{font-family:var(--mono);font-size:12px}
+.section-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:750;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+.evidence{font-size:12.5px;font-style:italic;color:#c3cdee;border-left:3px solid var(--accent);padding:7px 11px;margin:7px 0;background:rgba(91,140,255,.05);border-radius:0 6px 6px 0}
+.confidence-note{font-size:11.5px;color:var(--muted);margin:7px 0;line-height:1.5}
+
+/* ---------- states ---------- */
+.state{padding:34px 20px;text-align:center;color:var(--muted);border:1px dashed var(--line2);border-radius:var(--radius);background:var(--panel);font-size:13px}
+.state .ico{font-size:26px;margin-bottom:8px}
+.state .act{margin-top:12px}
+.skel{background:linear-gradient(90deg,var(--panel) 25%,var(--panel3) 50%,var(--panel) 75%);background-size:200% 100%;animation:sk 1.3s infinite;border-radius:6px}
+@keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.spinner{width:18px;height:18px;border:2px solid var(--line2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:-4px;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--panel3);border:1px solid var(--line2);border-left:3px solid var(--accent);border-radius:8px;padding:11px 14px;font-size:13px;box-shadow:var(--shadow);max-width:420px;animation:tin .2s ease}
+.toast.ok{border-left-color:var(--ok)}
+.toast.bad{border-left-color:var(--bad)}
+.toast.warn{border-left-color:var(--warn)}
+@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- search overlay ---------- */
+#searchOverlay{position:fixed;inset:0;background:rgba(5,7,14,.72);backdrop-filter:blur(4px);z-index:100;display:none}
+#searchOverlay.open{display:block}
+.search-panel{max-width:680px;margin:70px auto 0;background:var(--panel);border:1px solid var(--line2);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.search-panel .sp-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.search-panel .sp-head input{flex:1;border:none;background:transparent;color:var(--text);font-size:15px;padding:6px 0;box-shadow:none}
+.search-panel .sp-head input:focus{box-shadow:none}
+.search-panel .sp-body{max-height:460px;overflow-y:auto;padding:8px}
+.search-group-title{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);padding:10px 10px 4px;font-weight:750}
+.sr{display:flex;align-items:center;gap:11px;width:100%;padding:9px 11px;border:none;background:transparent;color:var(--text);border-radius:8px;cursor:pointer;text-align:left}
+.sr:hover{background:rgba(255,255,255,.04)}
+.sr.active{background:var(--accent-dim)}
+.sr .name{font-size:13.5px;font-weight:650}
+.sr .sub{font-size:11px;color:var(--muted);margin-top:1px}
+.sr .badge{margin-left:auto;flex-shrink:0}
+.sr .empty{color:var(--muted);padding:14px;text-align:center;font-size:13px}
+.sp-foot{display:flex;gap:14px;padding:9px 16px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+.kbd{font-family:var(--mono);font-size:10px;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;background:var(--bg2)}
+
+/* ---------- graph ---------- */
+.graph-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:8px;overflow:auto;padding:10px;margin:10px 0}
+.graph-wrap svg{display:block;min-width:680px}
+.hop-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.hop-bar button{background:var(--panel3);color:var(--text2);border:1px solid var(--line2);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:600}
+.hop-bar button.active{background:rgba(91,140,255,.18);border-color:var(--accent);color:var(--accent2)}
+.hop-note{font-size:11.5px;color:var(--muted)}
+.prov-box{margin-top:10px;padding:12px;border:1px solid #33406b;border-radius:8px;background:var(--bg2);font-size:12.5px}
+.prov-box h4{margin:0 0 8px;color:var(--warn);font-size:12px;letter-spacing:.5px}
+.legend{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:12px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;background:currentColor}
+
+/* ---------- candidates ---------- */
+.cand{background:var(--panel);border:1px solid rgba(240,166,60,.25);border-left:3px solid var(--cand);border-radius:var(--radius);padding:13px 15px;margin-bottom:12px}
+.cand.trusted{background:var(--panel);border-color:rgba(62,207,142,.3);border-left-color:var(--trusted)}
+.cand.rejected{border-color:rgba(239,91,91,.25);border-left-color:var(--rejected)}
+.cand .head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.cand .type{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+.cand .name{font-weight:700;font-size:14.5px}
+.cand .meta{font-size:12px;color:var(--muted);margin-top:5px}
+.cand .actions{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
+.cand .raw{font-size:11px;color:#9aa3c6;overflow:auto;max-height:200px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:8px;margin-top:8px;font-family:var(--mono)}
+.trusted-note{font-size:11px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+
+/* ---------- timeline ---------- */
+.tl{position:relative;padding-left:22px;margin-left:6px}
+.tl::before{content:"";position:absolute;left:5px;top:4px;bottom:4px;width:1px;background:var(--line2)}
+.tl-item{position:relative;margin-bottom:14px}
+.tl-item::before{content:"";position:absolute;left:-21px;top:5px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.tl-item.event::before{background:var(--node-event)}
+.tl-item.case::before{background:var(--node-case)}
+.tl-item .t{font-weight:650;font-size:13.5px}
+.tl-item .d{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+/* ---------- dropzone ---------- */
+.dropzone{border:1.5px dashed var(--line2);border-radius:var(--radius);padding:34px 20px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .15s,background .15s;background:var(--panel)}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:var(--accent-dim)}
+.dropzone .big{font-size:30px;margin-bottom:8px}
+.dropzone .main{color:var(--text2);font-size:14px;font-weight:600}
+
+/* ---------- misc ---------- */
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono)}
+.small{font-size:12px}
+.mt{margin-top:14px}
+.mb{margin-bottom:14px}
+.hidden{display:none !important}
+.flex-between{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.settings-row:last-child{border-bottom:none}
+.settings-row .v{color:var(--text2);font-family:var(--mono);font-size:12px}
+.progress{height:6px;background:var(--panel3);border-radius:4px;overflow:hidden;margin-top:8px}
+.progress>div{height:100%;background:var(--accent);transition:width .3s}
+
+/* ---------- graph tools (Part 2) ---------- */
+.graph-tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.graph-tools .g-label{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:750;margin-right:4px}
+.gbtn{min-width:28px;height:26px;padding:0 8px;border:1px solid var(--line2);background:var(--panel3);color:var(--text2);border-radius:6px;cursor:pointer;font-size:11.5px;font-weight:650;display:inline-flex;align-items:center;gap:5px}
+.gbtn:hover{border-color:var(--accent);color:var(--text)}
+.gbtn.active{background:rgba(91,140,255,.18);border-color:var(--accent);color:var(--accent2)}
+.gbtn:disabled{opacity:.4;cursor:not-allowed}
+.graph-wrap{position:relative;touch-action:none}
+.graph-wrap.dragging{cursor:grabbing}
+
+/* ---------- detail drawer (Part 2) ---------- */
+.drawer-backdrop{position:fixed;inset:0;background:rgba(5,7,14,.55);z-index:110;display:none}
+.drawer-backdrop.open{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:92vw;background:var(--bg2);border-left:1px solid var(--line2);z-index:111;transform:translateX(105%);transition:transform .18s ease;display:flex;flex-direction:column;box-shadow:-12px 0 34px rgba(0,0,0,.4)}
+.drawer.open{transform:none}
+.drawer-header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.drawer-header h2{font-size:16px;margin:0;line-height:1.3}
+.drawer-header .sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.drawer-close{border:none;background:transparent;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.drawer-close:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.drawer-body{flex:1;overflow-y:auto;padding:16px 18px 28px}
+.drawer-body .kv{font-size:12px}
+.drawer-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.drawer-section-title{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:750;margin:18px 0 8px}
+.evidence-id{font-family:var(--mono);font-size:10.5px;color:#9aa3c6;word-break:break-all}
+
+/* ---------- priority breakdown (Part 2) ---------- */
+.priority-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:12px}
+.priority-row .p-label{width:130px;color:var(--muted);flex-shrink:0;text-transform:capitalize}
+.priority-bar{flex:1;height:7px;background:var(--panel3);border-radius:4px;overflow:hidden;position:relative}
+.priority-bar>div{height:100%;background:var(--accent);border-radius:4px}
+.priority-row .p-val{width:34px;text-align:right;color:var(--text2);font-family:var(--mono);font-size:11.5px}
+.priority-total{display:flex;align-items:baseline;gap:8px;margin:8px 0}
+.priority-total .n{font-size:26px;font-weight:750}
+.priority-total .of{color:var(--muted);font-size:13px}
+
+/* ---------- demo chip (Part 2) ---------- */
+.demo-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;background:rgba(240,166,60,.14);color:#f2bd6b;border:1px solid rgba(240,166,60,.4)}
+
+/* ---------- saved searches (Part 2) ---------- */
+.ss-result-group{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);font-weight:750;margin:14px 0 6px}
+.ss-row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.ss-row:last-child{border-bottom:none}
+.ss-row .ss-name{font-weight:650}
+.ss-row .ss-sub{font-size:11.5px;color:var(--muted)}
+.ss-row .ss-act{margin-left:auto;display:flex;gap:6px;flex-shrink:0}
+
+/* ---------- change details (Part 2) ---------- */
+.ch-details{font-size:11.5px;color:var(--muted);margin-top:6px}
+.ch-details summary{cursor:pointer;color:var(--text2)}
+.ch-details pre{font-family:var(--mono);font-size:10.5px;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:8px;overflow:auto;margin-top:6px;color:#9aa3c6}
+
+@media (max-width:1100px){#sidebar{width:64px}.nav-item .lbl,.sec,.brand .name{display:none}.nav-item{justify-content:center;padding:10px}.brand{justify-content:center;padding:12px 8px}}
+@media (max-width:720px){#content{padding:14px 12px 50px}.kpis{grid-template-columns:repeat(2,1fr)}.top-btn .lbl{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="logo">N</div>
+      <div class="name">NARCOSCOPE<small>INVESTIGATION WORKSTATION</small></div>
+      <button class="side-collapse" id="sideCollapse" title="Collapse sidebar" aria-label="Collapse sidebar">«</button>
+    </div>
+    <nav class="side" id="sideNav"></nav>
+  </aside>
+
+  <div id="main">
+    <header id="topbar">
+      <div class="search-trigger">
+        <span class="s-ico">⌕</span>
+        <input id="globalSearchInput" type="text" placeholder="Search people, cases, events, organizations, locations…" autocomplete="off" aria-label="Global search">
+        <span class="s-kbd">/</span>
+      </div>
+      <div class="top-right">
+        <button class="top-btn" id="changesBell" title="Recent changes">
+          <span>▲</span><span class="lbl">What's New</span>
+        </button>
+        <button class="workspace-pill" id="wsPill" title="Active workspace"></button>
+        <div class="user-chip"><span class="av">IN</span><span>Investigator</span></div>
+      </div>
+    </header>
+    <main id="content" role="main"></main>
+  </div>
+</div>
+
+<div id="searchOverlay" role="dialog" aria-label="Global search">
+  <div class="search-panel">
+    <div class="sp-head">
+      <span style="color:var(--muted)">⌕</span>
+      <input id="overlaySearchInput" placeholder="Search people, cases, events, organizations, locations…" autocomplete="off">
+      <button class="btn ghost sm" id="overlayClear">Clear</button>
+    </div>
+    <div class="sp-body" id="overlayResults"></div>
+    <div class="sp-foot">
+      <span><span class="kbd">↑↓</span> navigate</span>
+      <span><span class="kbd">Enter</span> open</span>
+      <span><span class="kbd">Esc</span> close</span>
+      <span style="margin-left:auto">Trusted records only — pending candidates stay in the review queue</span>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-backdrop" id="nodeDrawerBackdrop"></div>
+<aside class="drawer" id="nodeDrawer" aria-label="Details drawer" aria-hidden="true">
+  <div class="drawer-header">
+    <div id="nodeDrawerHead"></div>
+    <button class="drawer-close" id="nodeDrawerClose" aria-label="Close details" title="Close (Esc)">✕</button>
+  </div>
+  <div class="drawer-body" id="nodeDrawerBody"></div>
+</aside>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   1. CENTRALIZED API CLIENT
+   ============================================================ */
+const API = ""; // same-origin — backend serves this page
+
+class AppError extends Error {
+  constructor(message, status, technical) { super(message); this.status = status; this.technical = technical || null; }
+}
+
+async function api(path, options = {}) {
+  let res;
+  try {
+    res = await fetch(API + path, options);
+  } catch (e) {
+    throw new AppError("Unable to reach the server. Check that the backend is running and try again.", 0, String(e));
+  }
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* non-JSON body */ }
+  if (!res.ok) {
+    const detail = data && (data.detail || data.message) ? String(data.detail || data.message) : null;
+    let message;
+    if (res.status >= 500) message = "The server encountered an error while processing this request. Please try again.";
+    else if (detail) message = detail;
+    else message = "Request failed (" + res.status + ").";
+    throw new AppError(message, res.status, detail);
+  }
+  return data;
+}
+
+const apiGet = (p) => api(p);
+function apiJSON(method, path, body) {
+  return api(path, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+}
+function qs(params) {
+  const u = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== "") u.set(k, v);
+  const s = u.toString();
+  return s ? "?" + s : "";
+}
+
+/* ============================================================
+   2. HELPERS
+   ============================================================ */
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c])); }
+function fmtDate(d) { return d ? String(d).slice(0, 10) : "—"; }
+function fmtDT(d) { if (!d) return "—"; const s = String(d).replace("T", " ").slice(0, 16); return s; }
+function fmtSize(n) { if (n == null) return "—"; if (n < 1024) return n + " B"; if (n < 1048576) return (n / 1024).toFixed(1) + " KB"; return (n / 1048576).toFixed(1) + " MB"; }
+function typeBadge(t) { return `<span class="badge type">${esc(t || "OTHER")}</span>`; }
+function statusBadge(s) { return `<span class="badge ${esc(s || "")}">${esc(s || "—")}</span>`; }
+function sigBadge(s) { return `<span class="badge ${esc(s || "")}">${esc(s || "—")}</span>`; }
+const NODE_COLORS = { PERSON:"#5b8cff", ORGANIZATION:"#3ecf8e", AGENCY:"#3ecf8e", LOCATION:"#35c2c8", EVENT:"#b07cff", CASE:"#f0a63c", PROPERTY:"#8a93b8", OTHER:"#8a93b8" };
+const nodeColor = (t) => NODE_COLORS[t] || NODE_COLORS.OTHER;
+const trunc = (s, n) => { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+const _norm = (s) => String(s || "").toLowerCase().trim();
+
+function toast(message, kind) {
+  const el = document.createElement("div");
+  el.className = "toast " + (kind || "");
+  el.textContent = message;
+  document.getElementById("toastWrap").appendChild(el);
+  setTimeout(() => el.remove(), 6000);
+}
+
+function emptyState(icon, title, actionHtml) {
+  return `<div class="state"><div class="ico">${icon}</div><div>${esc(title)}</div>${actionHtml ? `<div class="act">${actionHtml}</div>` : ""}</div>`;
+}
+function loadingState() {
+  return `<div class="state"><span class="spinner"></span>Loading…</div>`;
+}
+function errorState(err, retry) {
+  return `<div class="state"><div class="ico">⚠</div><div>${esc(err && err.message ? err.message : "Something went wrong.")}</div>` +
+    (retry ? `<div class="act"><button class="btn primary sm" onclick="${retry}">Try again</button></div>` : "") + `</div>`;
+}
+const pageHead = (title, crumb, rightHtml) =>
+  `<div class="page-head"><div><h1>${esc(title)}</h1><div class="crumb">${crumb || ""}</div></div>${rightHtml ? `<div class="row">${rightHtml}</div>` : ""}</div>`;
+function section(title) { return `<div class="section-title">${esc(title)}</div>`; }
+
+/* ============================================================
+   3. ROUTER (hash-based)
+   ============================================================ */
+const ROUTES = [];
+function addRoute(pattern, handler) { ROUTES.push({ pattern, handler }); }
+
+function matchRoute(hash) {
+  const path = (hash || "#/dashboard").replace(/^#/, "");
+  for (const r of ROUTES) {
+    const m = path.match(r.pattern);
+    if (m) return { handler: r.handler, params: (m.groups || {}) };
+  }
+  return { handler: routeNotFound, params: {} };
+}
+
+function navigate(hash) { if (location.hash !== hash) location.hash = hash; else renderRoute(); }
+
+function renderRoute() {
+  const { handler, params } = matchRoute(location.hash);
+  const content = document.getElementById("content");
+  content.innerHTML = loadingState();
+  setActiveNav(location.hash);
+  handler(content, params).catch((err) => {
+    content.innerHTML = errorState(err, "renderRoute()");
+    if (err && err.technical) console.error(err.technical);
+  });
+}
+
+function setActiveNav(hash) {
+  document.querySelectorAll("#sideNav .nav-item").forEach((b) => {
+    const href = b.dataset.href;
+    b.classList.toggle("active", hash === href || (href !== "#/dashboard" && hash.startsWith(href)));
+  });
+}
+
+function routeNotFound(container) {
+  container.innerHTML = pageHead("Not found", "The requested view does not exist") + emptyState("🗂", "No such view.", `<button class="btn primary sm" onclick="navigate('#/dashboard')">Go to Dashboard</button>`);
+}
+
+/* ============================================================
+   4. SIDEBAR
+   ============================================================ */
+const NAV = [
+  { sec: "Overview" },
+  { href: "#/dashboard", ico: "▦", lbl: "Dashboard" },
+  { href: "#/changes",   ico: "▲", lbl: "What's New" },
+  { sec: "Investigation" },
+  { href: "#/cases",      ico: "◈", lbl: "Cases" },
+  { href: "#/entities",   ico: "◎", lbl: "Entities" },
+  { href: "#/events",     ico: "◷", lbl: "Events" },
+  { href: "#/locations",  ico: "✈", lbl: "Locations" },
+  { href: "#/network",    ico: "◉", lbl: "Network Explorer" },
+  { href: "#/timeline",   ico: "≡", lbl: "Timeline" },
+  { sec: "Work" },
+  { href: "#/workspaces", ico: "▤", lbl: "Workspaces" },
+  { href: "#/saved-searches", ico: "⌕", lbl: "Saved Searches" },
+  { href: "#/sources",     ico: "☰", lbl: "Sources" },
+  { href: "#/data",        ico: "⇪", lbl: "Data Management" },
+  { href: "#/settings",    ico: "⚙", lbl: "Settings" },
+];
+
+function buildSidebar() {
+  const nav = document.getElementById("sideNav");
+  nav.innerHTML = NAV.map((n) =>
+    n.sec ? `<div class="sec">${esc(n.sec)}</div>`
+    : `<button class="nav-item" data-href="${n.href}" onclick="navigate('${n.href}')">
+         <span class="ico">${n.ico}</span><span class="lbl">${esc(n.lbl)}</span></button>`
+  ).join("");
+  document.getElementById("sideCollapse").addEventListener("click", () => {
+    const sb = document.getElementById("sidebar");
+    sb.classList.toggle("collapsed");
+  });
+}
+
+/* ============================================================
+   5. TOPBAR: workspace pill
+   ============================================================ */
+let activeWorkspaceId = localStorage.getItem("narc.activeWorkspace") || null;
+
+async function refreshWorkspacePill() {
+  const pill = document.getElementById("wsPill");
+  try {
+    const list = await apiGet("/workspaces");
+    const items = list.items || [];
+    let ws = items.find((w) => w.workspace_id === activeWorkspaceId) || items[0];
+    if (ws) {
+      activeWorkspaceId = ws.workspace_id;
+      localStorage.setItem("narc.activeWorkspace", activeWorkspaceId);
+      pill.innerHTML = `<span>▤</span><span class="w-name">${esc(ws.name)}</span>`;
+      pill.title = "Active workspace: " + ws.name + " — click to open";
+      pill.onclick = () => navigate("#/workspaces/" + ws.workspace_id);
+    } else {
+      pill.innerHTML = `<span>▤</span><span class="w-name">No active workspace</span>`;
+      pill.onclick = () => navigate("#/workspaces");
+    }
+  } catch (e) {
+    pill.innerHTML = `<span>▤</span><span class="w-name">Workspaces unavailable</span>`;
+  }
+}
+
+/* ============================================================
+   6. GLOBAL SEARCH
+   ============================================================ */
+const SEARCH_CATEGORIES = { PEOPLE: "People", CASES: "Cases", ORGANIZATIONS: "Organizations", EVENTS: "Events", LOCATIONS: "Locations", DOCUMENTS: "Documents" };
+
+let searchTimer = null, searchIdx = -1, searchResults = [];
+// Guards the trigger's focus listener so the programmatic refocus inside
+// closeSearchOverlay() cannot immediately re-open the overlay — which used
+// to leave the dimmed backdrop visible on top of the navigated page.
+let searchClosing = false;
+function openSearchOverlay() {
+  if (document.getElementById("searchOverlay").classList.contains("open")) return;
+  document.getElementById("searchOverlay").classList.add("open");
+  const inp = document.getElementById("overlaySearchInput");
+  inp.value = document.getElementById("globalSearchInput").value;
+  inp.focus();
+  runOverlaySearch();
+}
+function closeSearchOverlay() {
+  // Remove the overlay first, then hand focus back to the search trigger.
+  // The trigger's focus event is fired synchronously by .focus(), so the
+  // searchClosing guard is still active while it runs — the overlay stays
+  // closed after any close path (result click, Enter, Escape, backdrop).
+  document.getElementById("searchOverlay").classList.remove("open");
+  searchClosing = true;
+  document.getElementById("globalSearchInput").focus();
+  searchClosing = false;
+}
+function clearOverlaySearch() {
+  document.getElementById("overlaySearchInput").value = "";
+  searchResults = [];
+  document.getElementById("overlayResults").innerHTML = "";
+}
+function searchRowsHTML(rows) {
+  if (!rows.length) return `<div class="sr empty">No results found.</div>`;
+  const byCat = {};
+  for (const r of rows) (byCat[r.category] = byCat[r.category] || []).push(r);
+  const order = Object.keys(SEARCH_CATEGORIES).filter((c) => byCat[c]);
+  return order.map((c) =>
+    `<div class="search-group-title">${SEARCH_CATEGORIES[c]}</div>` +
+    byCat[c].map((r, i) => {
+      const gi = searchResults.indexOf(r);
+      return `<button class="sr ${gi === searchIdx ? "active" : ""}" onclick="openSearchResult(${gi})">
+        <div><div class="name">${esc(r.name)}</div><div class="sub">${esc(r.sub)}</div></div>
+        ${r.badge ? `<span class="badge ${esc(r.badgeCls || "neutral")}">${esc(r.badge)}</span>` : ""}
+      </button>`;
+    }).join("")
+  ).join("");
+}
+async function runOverlaySearch() {
+  const q = document.getElementById("overlaySearchInput").value.trim();
+  const box = document.getElementById("overlayResults");
+  if (!q) { searchResults = []; box.innerHTML = `<div class="sr empty">Type at least one character to search the trusted index.</div>`; return; }
+  box.innerHTML = `<div class="sr empty"><span class="spinner"></span>Searching…</div>`;
+  try {
+    const data = await apiGet("/search" + qs({ q, limit: 25 }));
+    const rows = [];
+    const push = (category, id, name, sub, badge, badgeCls, href) => {
+      if (name) rows.push({ category, id, name, sub: sub || "", badge, badgeCls, href });
+    };
+    // /search returns entities (all) plus derived people/organizations/locations
+    // subsets — use the subsets so every entity appears in exactly one category.
+    const seenIds = new Set();
+    const pushOnce = (category, e, sub) => {
+      if (!e || !e.canonical_name || seenIds.has(e.entity_id)) return;
+      seenIds.add(e.entity_id);
+      push(category, e.entity_id, e.canonical_name, sub, "trusted", "trusted", "#/entities/" + e.entity_id);
+    };
+    for (const e of data.people || []) pushOnce("PEOPLE", e, "PERSON");
+    for (const o of data.organizations || []) pushOnce("ORGANIZATIONS", o, o.entity_type || "ORGANIZATION");
+    for (const l of data.locations || []) pushOnce("LOCATIONS", l, "LOCATION");
+    for (const e of data.entities || []) pushOnce("PEOPLE", e, e.entity_type || "ENTITY");
+    for (const c of data.cases || []) push("CASES", c.case_id, c.case_name || c.official_case_number || "(case)", c.official_case_number ? c.official_case_number : c.status || "", "case", "neutral", "#/cases/" + c.case_id);
+    for (const e of data.events || []) push("EVENTS", e.event_id, e.title, (e.event_type || "") + (e.date_precision ? " · " + e.date_precision : ""), "event", "neutral", "#/events/" + e.event_id);
+    for (const d of data.documents || []) push("DOCUMENTS", d.document_id, d.filename, "document · " + d.processing_status, d.processing_status, "neutral", "#/data");
+    searchResults = rows;
+    searchIdx = -1;
+    box.innerHTML = searchRowsHTML(rows);
+  } catch (err) {
+    box.innerHTML = `<div class="sr empty">${esc(err.message)}</div>`;
+  }
+}
+function openSearchResult(i) {
+  const r = searchResults[i];
+  if (!r) return;
+  closeSearchOverlay();
+  navigate(r.href || "#/dashboard");
+}
+function overlayKeydown(e) {
+  if (e.key === "Escape") { e.preventDefault(); closeSearchOverlay(); return; }
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault();
+    if (!searchResults.length) return;
+    searchIdx = e.key === "ArrowDown" ? (searchIdx + 1) % searchResults.length : (searchIdx - 1 + searchResults.length) % searchResults.length;
+    document.getElementById("overlayResults").innerHTML = searchRowsHTML(searchResults);
+    return;
+  }
+  if (e.key === "Enter") { e.preventDefault(); if (searchIdx >= 0) openSearchResult(searchIdx); else if (searchResults.length) openSearchResult(0); }
+}
+function setupSearch() {
+  const trig = document.getElementById("globalSearchInput");
+  trig.addEventListener("focus", () => { if (!searchClosing) openSearchOverlay(); });
+  trig.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); openSearchOverlay(); }
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "/" && document.activeElement.tagName !== "INPUT" && document.activeElement.tagName !== "TEXTAREA" && document.activeElement.tagName !== "SELECT") {
+      e.preventDefault(); openSearchOverlay();
+    }
+  });
+  const inp = document.getElementById("overlaySearchInput");
+  inp.addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(runOverlaySearch, 250); });
+  inp.addEventListener("keydown", overlayKeydown);
+  document.getElementById("overlayClear").addEventListener("click", clearOverlaySearch);
+  document.getElementById("searchOverlay").addEventListener("click", (e) => { if (e.target.id === "searchOverlay") closeSearchOverlay(); });
+  document.getElementById("changesBell").addEventListener("click", () => navigate("#/changes"));
+}
+
+/* ============================================================
+   7. CANDIDATE RENDERING + REVIEW (reused, wired to real APIs)
+   ============================================================ */
+function candDescribe(c) {
+  const d = c.proposed_data || {};
+  switch (c.candidate_type) {
+    case "ENTITY": case "LOCATION":
+      return { name: d.name, meta: "Type: " + (d.entity_type || c.candidate_type) + (d.parent_location ? " · Parent: " + d.parent_location : "") + (d.aliases && d.aliases.length ? " · Aliases: " + d.aliases.join(", ") : "") };
+    case "EVENT":
+      return { name: d.title, meta: "Type: " + d.event_type + (d.start_date ? " · Date: " + d.start_date + " (" + d.date_precision + ")" : " · Date: unknown") + (d.location_name ? " · " + d.location_name : "") };
+    case "RELATIONSHIP":
+      return { name: d.source_name + " —" + d.relationship_type + "→ " + d.target_name, meta: "Classification: " + (d.classification || "DIRECT") };
+    case "FACT":
+      return { name: d.subject_name + " —" + d.predicate + "→ " + (d.object_name || "(case)"), meta: "Object type: " + (d.object_type || "CASE") };
+    case "CASE_MATCH":
+      return { name: d.case_name || d.case_number || "(case)", meta: "Action: " + d.action + (d.case_number ? " · Number: " + d.case_number : "") + (d.jurisdiction ? " · Jurisdiction: " + d.jurisdiction : "") };
+    case "CLAIM":
+      return { name: "Claim (" + (d.claim_status || "UNKNOWN") + ")", meta: "Subject: " + (d.subject_name || "—") };
+    default:
+      return { name: c.candidate_type, meta: JSON.stringify(d) };
+  }
+}
+function candEvidence(c) {
+  const refs = (c.evidence_refs && c.evidence_refs.length ? c.evidence_refs : (c.evidence ? [c.evidence] : []));
+  return refs.length ? refs.map((ev, i) => `<div class="evidence">${refs.length > 1 ? "<b>Evidence " + (i + 1) + ":</b> " : ""}“${esc(ev.exact_text)}”</div>`).join("") : "";
+}
+function candNote(c) {
+  return c.confidence_meaning || "Confidence represents how strongly the system supports this extraction or match based on deterministic rules and available evidence. It is not a probability of guilt.";
+}
+function candCard(c, opts = {}) {
+  const { name, meta } = candDescribe(c);
+  const cls = c.status === "CONFIRMED" ? "trusted" : c.status === "REJECTED" ? "rejected" : "";
+  const editable = c.status === "PENDING" || c.status === "EDITED";
+  return `<div class="cand ${cls}">
+    <div class="head">
+      <span class="badge ${esc(c.status)}">${esc(c.status)}</span>
+      <span class="type">${esc(c.candidate_type)}</span>
+      <span class="name">${esc(name)}</span>
+      ${c.confidence != null ? `<span class="pill">conf ${c.confidence}</span>` : ""}
+    </div>
+    <div class="meta">${esc(meta)} · reason: ${esc(c.reason)}</div>
+    ${candEvidence(c)}
+    <div class="actions">
+      ${editable && opts.actions !== false ? `
+        <button class="btn ok sm" onclick="reviewCandidate('${c.candidate_id}','confirm')">Confirm</button>
+        <button class="btn bad sm" onclick="reviewCandidate('${c.candidate_id}','reject')">Reject</button>` : ""}
+      <button class="btn ghost sm" onclick="toggleCandRaw('${c.candidate_id}')">Details</button>
+    </div>
+    <div class="raw hidden" id="candraw-${c.candidate_id}">
+      <div class="confidence-note">${esc(candNote(c))}</div>
+      <pre>${esc(JSON.stringify(c.proposed_data || {}, null, 2))}</pre>
+    </div>
+  </div>`;
+}
+function toggleCandRaw(id) { document.getElementById("candraw-" + id).classList.toggle("hidden"); }
+async function reviewCandidate(id, action) {
+  try {
+    await apiJSON("POST", `/candidates/${id}/${action}`, {
+      reviewed_by: "web-investigator",
+      reason: action === "confirm" ? "Confirmed via review interface" : "Rejected via review interface",
+    });
+    toast(action === "confirm" ? "Candidate confirmed." : "Candidate rejected.", action === "confirm" ? "ok" : "warn");
+    renderRoute();
+  } catch (err) { toast(err.message, "bad"); }
+}
+/* ============================================================
+   8. GRAPH RENDERER (reused from Phase 1/2 — trusted data only)
+   ============================================================ */
+let currentHops = 1;
+// Backend filters forwarded to the trusted graph endpoints.
+let graphFilters = { relationship_type: "", entity_type: "", case_id: "" };
+let graphView = { scale: 1, tx: 0, ty: 0 }; // zoom/pan state
+let lastGraphContainer = null;              // graph-wrap element id of the current graph
+let __graphRaw = null;                      // last raw trusted graph payload (for in-graph search)
+
+function renderGraphSVG(data, containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const W = 900, H = 560, CX = 450, CY = 280;
+  const nodes = data.nodes || [], edges = data.edges || [], center = data.center || {};
+  const ids = new Set(nodes.map((n) => n.id));
+  const visibleEdges = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
+  const neighbors = nodes.filter((n) => n.id !== center.id);
+  const radius = Math.min(250, 110 + neighbors.length * 20);
+  const pos = {};
+  pos[center.id] = { x: CX, y: CY };
+  neighbors.forEach((n, i) => {
+    const angle = (2 * Math.PI * i) / Math.max(neighbors.length, 1) - Math.PI / 2;
+    pos[n.id] = { x: CX + radius * Math.cos(angle), y: CY + radius * Math.sin(angle) };
+  });
+  const byPair = {};
+  visibleEdges.forEach((e) => { const k = e.source + "|" + e.target; (byPair[k] = byPair[k] || []).push(e); });
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trusted knowledge graph">`;
+  svg += `<defs><marker id="garrow" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#55608a"/></marker></defs>`;
+  for (const [k, group] of Object.entries(byPair)) {
+    const [s, t] = k.split("|");
+    const p1 = pos[s], p2 = pos[t];
+    if (!p1 || !p2) continue;
+    const n = group.length;
+    group.forEach((e, i) => {
+      const off = (i - (n - 1) / 2) * 14;
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len, ny = dx / len;
+      const x1 = p1.x + nx * off, y1 = p1.y + ny * off;
+      const x2 = p2.x + nx * off, y2 = p2.y + ny * off;
+      const provId = e.relationship_id || e.fact_id || e.event_id || "";
+      const provKind = e.provenance_kind || "relationship";
+      // DIRECT edges are solid; DERIVED edges are dashed. Candidate edges
+      // never reach the trusted graph — the backend only serves confirmed rows.
+      const dashed = String(e.classification || "DIRECT").toUpperCase() === "DERIVED" ? " stroke-dasharray=\"6,4\"" : "";
+      svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#55608a" stroke-width="1.5" marker-end="url(#garrow)"${dashed} style="cursor:pointer" onclick="explainEdge('${esc(provKind)}','${esc(provId)}')"/>`;
+      svg += `<text x="${(x1 + x2) / 2 + nx * 8}" y="${(y1 + y2) / 2 + ny * 8 - 5}" font-size="9" fill="#8a93b8" text-anchor="middle">${esc(e.relationship_type)}</text>`;
+    });
+  }
+  for (const n of nodes) {
+    const p = pos[n.id];
+    if (!p) continue;
+    const isCenter = n.id === center.id;
+    const r = isCenter ? 20 : 15;
+    const refId = n.entity_id || n.event_id || n.case_id || "";
+    svg += `<g onclick="openNodePanel('${n.node_kind}','${esc(refId)}')" style="cursor:pointer">
+      <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${nodeColor(n.type)}" stroke="${isCenter ? "#ffffff" : "#0b0e17"}" stroke-width="${isCenter ? 2.5 : 1.5}"/>
+      <text x="${p.x}" y="${p.y + r + 13}" font-size="10" fill="#dbe2f4" text-anchor="middle">${esc(trunc(n.name, 24))}</text>
+    </g>`;
+  }
+  svg += "</svg>";
+  el.innerHTML = svg + `<div class="legend">${Object.keys(NODE_COLORS).map((t) => `<span style="color:${NODE_COLORS[t]}">${t}</span>`).join("")}<span style="color:#55608a">——— direct</span><span style="color:#55608a">— — — derived</span></div>`;
+  lastGraphContainer = containerId;
+  setupGraphInteractions(containerId);
+}
+
+/* ---------- graph zoom / pan / interactions ---------- */
+function applyGraphTransform(containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const svg = wrap.querySelector("svg");
+  if (!svg) return;
+  svg.style.transformOrigin = "0 0";
+  svg.style.transform = `translate(${graphView.tx}px, ${graphView.ty}px) scale(${graphView.scale})`;
+}
+function graphZoom(dir) {
+  graphView.scale = Math.min(3, Math.max(0.4, graphView.scale * (dir > 0 ? 1.2 : 1 / 1.2)));
+  applyGraphTransform(lastGraphContainer);
+}
+function graphZoomReset() {
+  graphView = { scale: 1, tx: 0, ty: 0 };
+  applyGraphTransform(lastGraphContainer);
+}
+function setupGraphInteractions(containerId) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  graphView = { scale: 1, tx: 0, ty: 0 };
+  applyGraphTransform(containerId);
+  wrap.onwheel = (e) => {
+    e.preventDefault();
+    const f = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+    graphView.scale = Math.min(3, Math.max(0.4, graphView.scale * f));
+    applyGraphTransform(containerId);
+  };
+  let drag = null;
+  const startDrag = (e) => {
+    const t = e.target && e.target.tagName;
+    // Drag on the canvas background only (svg element / wrapper); node and
+    // edge elements keep their click behaviour.
+    if (t === "svg" || (e.target === wrap)) {
+      drag = { x: e.clientX - graphView.tx, y: e.clientY - graphView.ty };
+      wrap.classList.add("dragging");
+    }
+  };
+  const moveDrag = (e) => {
+    if (!drag) return;
+    graphView.tx = e.clientX - drag.x;
+    graphView.ty = e.clientY - drag.y;
+    applyGraphTransform(containerId);
+  };
+  const endDrag = () => { drag = null; wrap.classList.remove("dragging"); };
+  wrap.addEventListener("mousedown", startDrag);
+  window.addEventListener("mousemove", moveDrag);
+  window.addEventListener("mouseup", endDrag);
+}
+function recenterGraph(nodeKind, nodeId) {
+  if (!nodeId) return;
+  const pane = document.getElementById("graphPane");
+  if (pane && pane.querySelector(".graph-wrap")) loadNetworkTab(nodeKind, nodeId, currentHops, "graphPane");
+  else navigate(nodeKind === "entity" ? "#/entities/" + nodeId : nodeKind === "event" ? "#/events/" + nodeId : "#/cases/" + nodeId);
+}
+function graphFilterByName(q) {
+  if (!__graphRaw) return;
+  const all = __graphRaw;
+  const nodes = (all.nodes || []).filter((n) => _norm(n.name).includes(_norm(q)));
+  renderGraphSVG({
+    ...all,
+    nodes,
+    edges: (all.edges || []).filter((ed) => nodes.some((n) => n.id === ed.source) && nodes.some((n) => n.id === ed.target)),
+  }, "graphPane-svg");
+}
+function graphUrlFor(kind, id, hops, extra) {
+  const base = kind === "case" ? `/graph/case/${id}` : kind === "event" ? `/graph/event/${id}` : kind === "location" ? `/graph/location/${id}` : `/graph/entity/${id}`;
+  const params = { hops: hops || 1, limit: 100, ...(extra || {}) };
+  for (const k of ["relationship_type", "entity_type", "case_id"]) if (graphFilters[k]) params[k] = graphFilters[k];
+  return base + qs(params);
+}
+async function loadNetworkTab(kind, id, hops, containerId, extra) {
+  const pane = document.getElementById(containerId || "graphPane");
+  if (!pane) return;
+  pane.innerHTML = loadingState();
+  currentHops = hops || 1;
+  try {
+    const data = await apiGet(graphUrlFor(kind, id, currentHops, extra));
+    const paneId = containerId || "graphPane";
+    const bar = `<div class="hop-bar">
+      <button class="${currentHops === 1 ? "active" : ""}" onclick="loadNetworkTab('${kind}','${esc(id)}',1,'${paneId}',${extra ? JSON.stringify(extra) : "null"})">1-hop</button>
+      <button class="${currentHops === 2 ? "active" : ""}" onclick="loadNetworkTab('${kind}','${esc(id)}',2,'${paneId}',${extra ? JSON.stringify(extra) : "null"})">2-hop</button>
+      <span class="hop-note">${data.truncated ? `Graph limit reached: showing the ${data.nodes.length} most relevant of ${data.total_found} nodes.` : `${data.total_found} node(s) in view.`}</span>
+    </div>
+    <div class="graph-tools">
+      <span class="g-label">View</span>
+      <button class="gbtn" onclick="graphZoom(1)" title="Zoom in" aria-label="Zoom in">+</button>
+      <button class="gbtn" onclick="graphZoom(-1)" title="Zoom out" aria-label="Zoom out">−</button>
+      <button class="gbtn" onclick="graphZoomReset()" title="Reset zoom and position" aria-label="Reset zoom">⤢</button>
+      <button class="gbtn" onclick="loadNetworkTab('${kind}','${esc(id)}',${currentHops === 1 ? 2 : 1},'${paneId}',${extra ? JSON.stringify(extra) : "null"})" title="${currentHops === 1 ? "Expand to 2-hop" : "Collapse to 1-hop"}">${currentHops === 1 ? "Expand" : "Collapse"}</button>
+    </div>
+    <div class="graph-wrap" id="${paneId}-svg"></div>
+    <div class="hop-note mt">Click a node to inspect it · click a relationship edge for “Why am I seeing this?”. A 2-hop connection is never shown as a direct relationship.</div>`;
+    pane.innerHTML = bar;
+    __graphRaw = data;
+    renderGraphSVG(data, paneId + "-svg");
+  } catch (err) {
+    pane.innerHTML = errorState(err, "loadNetworkTab('" + kind + "','" + id + "'," + hops + ",'" + (containerId || "graphPane") + "')");
+  }
+}
+
+/* ---------- detail drawer (nodes + evidence) ---------- */
+function openDrawer(headHtml, subHtml) {
+  document.getElementById("nodeDrawerHead").innerHTML = `<h2>${headHtml}</h2>${subHtml ? `<div class="sub">${subHtml}</div>` : ""}`;
+  document.getElementById("nodeDrawerBody").innerHTML = loadingState();
+  document.getElementById("nodeDrawer").classList.add("open");
+  document.getElementById("nodeDrawer").setAttribute("aria-hidden", "false");
+  document.getElementById("nodeDrawerBackdrop").classList.add("open");
+}
+function closeDrawer() {
+  document.getElementById("nodeDrawer").classList.remove("open");
+  document.getElementById("nodeDrawer").setAttribute("aria-hidden", "true");
+  document.getElementById("nodeDrawerBackdrop").classList.remove("open");
+}
+async function findBookmark(kind, id) {
+  try {
+    const d = await apiGet("/bookmarks");
+    return (d.items || []).find((b) => b.subject_kind === kind && b.subject_id === id) || null;
+  } catch (e) { return null; }
+}
+async function toggleBookmark() {
+  const ctx = window.__drawerCtx;
+  if (!ctx) return;
+  try {
+    if (ctx.bookmark_id) {
+      await api("/bookmarks/" + ctx.bookmark_id, { method: "DELETE" });
+      toast("Bookmark removed.", "warn");
+    } else {
+      const b = await apiJSON("POST", "/bookmarks", { subject_kind: ctx.kind, subject_id: ctx.id, subject_name: ctx.name || null, created_by: "web-investigator" });
+      toast("Bookmarked.", "ok");
+    }
+    openNodePanel(ctx.kind, ctx.id, ctx.name, ctx.type);
+  } catch (err) { toast(err.message, "bad"); }
+}
+async function openNodePanel(nodeKind, nodeId, nodeName, nodeType) {
+  if (!nodeId) return;
+  const kind = nodeKind === "entity" ? "entity" : nodeKind === "event" ? "event" : nodeKind === "case" ? "case" : "entity";
+  const name = nodeName || nodeType || "Node";
+  window.__drawerCtx = { kind, id: nodeId, name, type: nodeType || "", bookmark_id: null };
+  openDrawer(esc(name), esc(nodeType || nodeKind || ""));
+  const body = document.getElementById("nodeDrawerBody");
+  try {
+    let html = "";
+    const bm = await findBookmark(kind, nodeId);
+    window.__drawerCtx.bookmark_id = bm ? bm.bookmark_id : null;
+    if (kind === "entity") {
+      const [entity, history] = await Promise.all([
+        apiGet("/entities/" + nodeId).catch(() => null),
+        apiGet("/entities/" + nodeId + "/history").catch(() => null),
+      ]);
+      const h = history || {};
+      html = `<div class="kv"><b>Status:</b> ${esc((entity && entity.status) || (h.entity || {}).status || "—")}</div>
+        <div class="kv"><b>Entity id:</b> <span class="mono">${esc(nodeId)}</span></div>
+        ${(h.entity && h.entity.aliases && h.entity.aliases.length) ? `<div class="kv"><b>Aliases:</b> ${esc(h.entity.aliases.join(", "))}</div>` : ""}
+        <div class="drawer-actions">
+          <button class="btn sm" onclick="navigate('#/entities/${nodeId}')">View History</button>
+          <button class="btn sm" onclick="recenterGraph('entity','${nodeId}')">Expand Network</button>
+          <button class="btn sm" onclick="navigate('#/entities/${nodeId}')">Open Page</button>
+        </div>`;
+      if (h.cases && h.cases.length) {
+        html += `<div class="drawer-section-title">Cases (${h.cases.length})</div>` +
+          h.cases.slice(0, 5).map((c) => `<div class="kv">${esc(c.case_name || "(case)")} <span class="muted small mono">${esc(c.official_case_number || "")}</span></div>`).join("") +
+          (h.cases.length > 5 ? `<div class="muted small">…and ${h.cases.length - 5} more</div>` : "");
+      }
+      if (h.events && h.events.length) {
+        html += `<div class="drawer-section-title">Events (${h.events.length})</div>` +
+          h.events.slice(0, 5).map((ev) => `<div class="kv">${esc(ev.title)} <span class="muted small">${esc(ev.event_type || "")}</span></div>`).join("");
+      }
+      html += `<div class="drawer-section-title">Relationships</div><div class="kv">${(h.relationships || []).length} confirmed relationship(s)</div>
+        <div class="drawer-section-title">Sources</div>` +
+        ((h.sources || []).length ? h.sources.slice(0, 5).map((s) => `<div class="kv">${esc(s.publisher || s.source_id)}</div>`).join("") : '<div class="muted small">No sources referenced.</div>');
+    } else if (kind === "event") {
+      const ev = await apiGet("/events/" + nodeId);
+      html = `<div class="kv"><b>Type:</b> ${esc(ev.event_type)}</div>
+        <div class="kv"><b>Date:</b> ${ev.start_date ? esc(ev.start_date) + (ev.end_date ? " → " + esc(ev.end_date) : "") : "Unknown"} <span class="pill">${esc(ev.date_precision || "UNKNOWN")}</span></div>
+        ${ev.case_id ? `<div class="kv"><b>Case:</b> linked to a trusted case</div>` : ""}
+        <div class="drawer-actions">
+          <button class="btn sm" onclick="navigate('#/events/${nodeId}')">Open Event</button>
+          <button class="btn sm" onclick="recenterGraph('event','${nodeId}')">Expand Network</button>
+        </div>`;
+    } else if (kind === "case") {
+      const cs = await apiGet("/cases/" + nodeId);
+      html = `<div class="kv"><b>Number:</b> <span class="mono">${esc(cs.official_case_number || "—")}</span></div>
+        <div class="kv"><b>Jurisdiction:</b> ${esc(cs.jurisdiction || "—")} · <b>Status:</b> ${esc(cs.status)}</div>
+        <div class="kv"><b>Dates:</b> ${fmtDate(cs.start_date)} → ${fmtDate(cs.end_date)}</div>
+        <div class="drawer-actions">
+          <button class="btn sm" onclick="navigate('#/cases/${nodeId}')">Open Case</button>
+          <button class="btn sm" onclick="recenterGraph('case','${nodeId}')">Expand Network</button>
+        </div>`;
+    } else {
+      html = `<div class="kv">${esc(name)}</div>`;
+    }
+    html += `<div class="drawer-section-title">Bookmark</div>
+      <button class="btn ${bm ? "warn" : "ok"} sm" onclick="toggleBookmark()">${bm ? "Remove bookmark" : "Add bookmark"}</button>`;
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = `<div class="state" style="padding:14px">${esc(err.message)}</div>`;
+  }
+}
+async function explainEdge(provKind, provId) {
+  if (!provId) return;
+  window.__drawerCtx = null;
+  openDrawer("Why am I seeing this?", "Evidence-backed explanation for a trusted relationship");
+  const body = document.getElementById("nodeDrawerBody");
+  try {
+    const p = await apiGet(`/graph/provenance/${provKind}/${provId}`);
+    const rel = p.relationship || p.fact || null;
+    let html = `<div class="drawer-section-title">Relationship</div>
+      <div class="kv"><b>Type:</b> ${esc(p.relationship_type || "—")}</div>
+      ${rel ? `<div class="kv"><b>Status:</b> ${esc(rel.status || "—")}</div>` : ""}
+      <div class="kv"><b>Classification:</b> ${esc(p.classification || "—")}</div>`;
+    if (p.case) html += `<div class="drawer-section-title">Case</div><div class="kv">${esc(p.case.official_case_number || p.case.case_name || "—")}</div>`;
+    if (p.event) html += `<div class="drawer-section-title">Event</div><div class="kv">${esc(p.event.title || "—")}${p.event.date_precision ? ` <span class="pill">${esc(p.event.date_precision)}</span>` : ""}${p.event.start_date ? " · " + esc(p.event.start_date) : ""}</div>`;
+    if (rel && rel.confidence != null) html += `<div class="drawer-section-title">Confidence</div><div class="kv">${esc(String(rel.confidence))} — extraction/matching confidence, not a probability of guilt.</div>`;
+    if (p.source) html += `<div class="drawer-section-title">Source</div>
+      <div class="kv"><b>Publisher:</b> ${esc(p.source.publisher || "—")}</div>
+      <div class="kv"><b>Agency:</b> ${esc(p.source.agency || "—")}</div>
+      <div class="kv"><b>Type:</b> ${esc(p.source.source_type || "—")}</div>
+      <div class="kv"><b>Publication date:</b> ${esc(p.source.publication_date || "—")}</div>`;
+    if (p.document) html += `<div class="kv"><b>Document:</b> ${esc(p.document.filename || "—")}</div>`;
+    if (p.evidence) {
+      html += `<div class="drawer-section-title">Evidence</div>
+        <div class="evidence">“${esc(p.evidence.exact_text || "")}”</div>
+        <div class="kv">${p.evidence.page_number != null ? "<b>Page:</b> " + esc(String(p.evidence.page_number)) + " · " : ""}<b>Evidence id:</b> <span class="evidence-id">${esc(p.evidence.evidence_id)}</span></div>`;
+    } else {
+      html += `<div class="kv">No evidence reference stored for this edge.</div>`;
+    }
+    if (p.document && p.document.document_id) html += `<div class="kv"><b>Document id:</b> <span class="evidence-id">${esc(p.document.document_id)}</span></div>`;
+    if (p.source && p.source.source_id) html += `<div class="kv"><b>Source id:</b> <span class="evidence-id">${esc(p.source.source_id)}</span></div>`;
+    html += `<div class="drawer-actions"><button class="btn sm" onclick="navigate('#/sources')">Original document available in Sources</button></div>
+      <div class="muted small">No direct document-viewer endpoint exists — the original document is preserved and browsable under Sources.</div>`;
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = `<div class="state" style="padding:14px">${esc(err.message)}</div>`;
+  }
+}
+
+/* ============================================================
+   9. PAGES
+   ============================================================ */
+
+/* ---------- 9.1 Dashboard ---------- */
+async function pageDashboard(container) {
+  container.innerHTML = pageHead("Dashboard", "Investigation overview · trusted data only");
+  container.insertAdjacentHTML("beforeend", '<div id="dashGrid" class="grid2"></div>');
+
+  const [cases, entities, events, rels, sources, stats, changes, docs, workspaces, bookmarks, ranking] = await Promise.all([
+    apiGet("/cases" + qs({ limit: 200 })).catch((e) => ({ items: [], total: null, error: e })),
+    apiGet("/entities" + qs({ limit: 1 })).catch((e) => ({ total: null, error: e })),
+    apiGet("/events" + qs({ limit: 1 })).catch((e) => ({ total: null, error: e })),
+    apiGet("/relationships" + qs({ limit: 1 })).catch((e) => ({ total: null, error: e })),
+    apiGet("/sources" + qs({ limit: 200 })).catch((e) => ({ items: [], error: e })),
+    apiGet("/graph/stats").catch((e) => ({ error: e })),
+    apiGet("/changes" + qs({ limit: 6 })).catch((e) => ({ items: [], error: e })),
+    apiGet("/documents" + qs({ limit: 5 })).catch((e) => ({ items: [], error: e })),
+    apiGet("/workspaces").catch((e) => ({ items: [], error: e })),
+    apiGet("/bookmarks").catch((e) => ({ items: [], error: e })),
+    apiGet("/priority/ranking" + qs({ limit: 8 })).catch((e) => ({ items: [], error: e })),
+  ]);
+
+  // Data-driven demo detection: the seeded synthetic dataset uses CASE-###
+  // names and NCB/… or FIR … official numbers. No fabricated marker.
+  const demoDetected = (cases.items || []).some((c) => /^CASE-\d+$/.test(c.case_name || "") || /^(NCB\/|FIR )/.test(c.official_case_number || ""));
+
+  const n = (v, d) => (v == null ? "—" : v);
+  const kpi = (num, lab, cls) => `<div class="kpi ${cls || ""}"><div class="num">${n(num)}</div><div class="lab">${esc(lab)}</div></div>`;
+  container.innerHTML = pageHead("Dashboard", "Investigation overview · trusted data only", demoDetected ? `<span class="demo-chip">Demo data</span>` : "") +
+    `<div class="kpis">
+      ${kpi(cases.total, "Total Cases", "amber")}
+      ${kpi(entities.total, "Entities", "")}
+      ${kpi(events.total, "Events", "purple")}
+      ${kpi(rels.total, "Relationships")}
+      ${kpi((sources.items || []).length, "Sources", "green")}
+    </div>
+    <div class="grid2">
+      <div>
+        <div class="panel"><h2>Network overview</h2>
+          ${stats.error ? `<div class="state" style="padding:14px">${esc(stats.error.message)}</div>` : `
+          <div class="row" style="gap:16px;flex-wrap:wrap">
+            <div class="kpi" style="margin:0;flex:1;min-width:130px"><div class="num">${stats.total_nodes ?? "—"}</div><div class="lab">Trusted nodes</div></div>
+            <div class="kpi green" style="margin:0;flex:1;min-width:130px"><div class="num">${stats.total_edges ?? "—"}</div><div class="lab">Trusted edges</div></div>
+          </div>
+          <div class="row mt" style="gap:6px">${Object.entries(stats.nodes_by_type || {}).map(([t, c]) => `<span class="pill" style="border-left:3px solid ${nodeColor(t)}">${esc(t)} ${c}</span>`).join("") || '<span class="muted">No trusted nodes.</span>'}</div>
+          <div class="mt"><button class="btn primary sm" onclick="navigate('#/network')">Open Network Explorer</button></div>`}
+        </div>
+        <div class="panel"><h2>Quick search</h2>
+          <input id="dashSearch" placeholder="Search people, cases, events, organizations, locations…" aria-label="Quick search">
+          <div id="dashSearchResults" class="mt"></div>
+        </div>
+      </div>
+      <div>
+        <div class="panel"><h2>What's New</h2>
+          ${changes.error ? `<div class="state" style="padding:14px">${esc(changes.error.message)}</div>` : !(changes.items || []).length ? `<div class="muted small">No detected changes yet — run a snapshot comparison in What's New.</div>` : `
+            <div id="whatsNew"></div>`}
+          ${(changes.items || []).length ? `<div class="mt"><button class="btn sm" onclick="navigate('#/changes')">View all changes</button></div>` : ""}
+        </div>
+        <div class="panel"><h2>Recent documents</h2>
+          ${docs.error ? `<div class="state" style="padding:14px">${esc(docs.error.message)}</div>` : !(docs.items || []).length ? emptyState("📄", "No documents yet. Upload a PDF, DOCX or TXT to begin.", `<button class="btn primary sm" onclick="navigate('#/data')">Upload a document</button>`) : `
+            ${docs.items.map((d) => `<div class="card" style="margin-bottom:8px"><div class="t">${esc(d.filename)}</div><div class="s">${esc(d.processing_status)} · ${fmtDT(d.upload_timestamp)}</div></div>`).join("")}`}
+        </div>
+        <div class="panel"><h2>Active workspace</h2>
+          <div id="dashWorkspace"></div>
+        </div>
+        <div class="panel"><h2>Investigation priority</h2>
+          ${ranking.error ? `<div class="state" style="padding:14px">${esc(ranking.error.message)}</div>` : !(ranking.items || []).length ? '<span class="muted small">No priority scores yet — entities appear here once they have trusted graph analytics.</span>' : ranking.items.map((r) => `<div class="ss-row">
+            <button class="btn ghost sm" onclick="navigate('#/entities/${r.entity_id}')">${esc(r.name)}</button>
+            <span class="ss-sub">${esc(r.entity_type)}</span>
+            <span class="ss-act pill">${r.total}/100</span></div>`).join("")}
+          <div class="confidence-note mt">Investigation Priority is an analytical review-prioritization signal. It does not represent guilt or criminality.</div>
+        </div>
+        <div class="panel"><h2>Bookmarks</h2>
+          ${bookmarks.error ? `<div class="state" style="padding:14px">${esc(bookmarks.error.message)}</div>` : !(bookmarks.items || []).length ? emptyState("☆", "No bookmarks yet.", `<button class="btn primary sm" onclick="navigate('#/entities')">Browse entities</button>`) : bookmarks.items.slice(0, 8).map((b) => `<div class="ss-row">
+            <button class="btn ghost sm" onclick="navigate('${bookmarkHref(b)}')">${esc(b.subject_name || b.name || b.subject_id)}</button>
+            <span class="ss-sub">${esc(b.subject_kind)}</span>
+            <button class="btn bad sm" onclick="removeBookmark('${b.bookmark_id}')">Remove</button></div>`).join("")}
+        </div>
+      </div>
+    </div>`;
+
+  const ws = (workspaces.items || []).find((w) => w.workspace_id === activeWorkspaceId) || (workspaces.items || [])[0];
+  document.getElementById("dashWorkspace").innerHTML = ws
+    ? `<div class="card"><div class="t">${esc(ws.name)}</div><div class="s">${esc(ws.description || "No description")}</div><div class="m"><button class="btn sm" onclick="navigate('#/workspaces/${ws.workspace_id}')">Open workspace</button><button class="btn ghost sm" onclick="navigate('#/workspaces')">Manage</button></div></div>`
+    : emptyState("▤", "No active workspace.", `<button class="btn primary sm" onclick="navigate('#/workspaces')">Create or select a workspace</button>`);
+
+  document.getElementById("dashSearch").addEventListener("input", (e) => {
+    clearTimeout(window.__dashSearchT);
+    window.__dashSearchT = setTimeout(async () => {
+      const q = e.target.value.trim();
+      const box = document.getElementById("dashSearchResults");
+      if (!q) { box.innerHTML = ""; return; }
+      box.innerHTML = '<span class="muted small"><span class="spinner"></span></span>';
+      try {
+        const data = await apiGet("/search" + qs({ q, limit: 5 }));
+        const rows = [];
+        for (const p of data.people || []) rows.push(`<button class="sr" onclick="navigate('#/entities/${p.entity_id}')"><div><div class="name">${esc(p.canonical_name)}</div><div class="sub">PERSON</div></div></button>`);
+        for (const o of data.organizations || []) rows.push(`<button class="sr" onclick="navigate('#/entities/${o.entity_id}')"><div><div class="name">${esc(o.canonical_name)}</div><div class="sub">ORGANIZATION</div></div></button>`);
+        for (const c of data.cases || []) rows.push(`<button class="sr" onclick="navigate('#/cases/${c.case_id}')"><div><div class="name">${esc(c.case_name || c.official_case_number || "(case)")}</div><div class="sub">CASE</div></div></button>`);
+        for (const e of data.events || []) rows.push(`<button class="sr" onclick="navigate('#/events/${e.event_id}')"><div><div class="name">${esc(e.title)}</div><div class="sub">EVENT</div></div></button>`);
+        box.innerHTML = rows.join("") || '<span class="muted small">No results.</span>';
+      } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+    }, 250);
+  });
+
+  const wn = document.getElementById("whatsNew");
+  if (wn) {
+    const items = changes.items || [];
+    wn.innerHTML = items.map((c) => {
+      const name = (c.details || {}).name || (c.reference_id || "").split(":").pop() || c.category;
+      return `<div class="card" style="margin-bottom:8px"><div class="m"><span class="badge ${esc(c.significance)}">${esc(c.significance)}</span><span class="badge neutral">${esc(c.category)}</span></div><div class="s mt" style="margin-top:4px">${esc(name)}</div></div>`;
+    }).join("");
+  }
+}
+
+/* ---------- 9.2 Cases list ---------- */
+async function pageCases(container) {
+  container.innerHTML = pageHead("Cases", "Trusted case records") + `<div class="panel"><div class="row">
+    <input id="caseQ" placeholder="Search by case name or official number" style="max-width:340px" value="${esc(location.hash.split("?")[1] ? decodeURIComponent(location.hash.split("q=")[1] || "") : "")}">
+    <button class="btn primary sm" id="caseSearchBtn">Search</button>
+    <button class="btn ghost sm" onclick="navigate('#/cases')">Clear</button>
+  </div><div id="caseList" class="mt"></div></div>`;
+
+  async function load() {
+    const q = document.getElementById("caseQ").value.trim();
+    const box = document.getElementById("caseList");
+    box.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/cases" + qs({ q, limit: 200 }));
+      const items = data.items || [];
+      if (!items.length) {
+        box.innerHTML = emptyState("◈", "No cases yet.", `<button class="btn primary sm" onclick="navigate('#/data')">Upload a document to begin</button>`);
+        return;
+      }
+      box.innerHTML = `<div class="muted small mb">${data.total} case(s) · click a row to open</div>
+      <div style="overflow-x:auto"><table class="list">
+        <tr><th>Case number</th><th>Name</th><th>Category</th><th>Jurisdiction</th><th>Start</th><th>End</th><th>Status</th></tr>
+        ${items.map((c) => `<tr class="clickable" onclick="navigate('#/cases/${c.case_id}')">
+          <td class="mono">${esc(c.official_case_number || "—")}</td>
+          <td>${esc(c.case_name || "—")}</td>
+          <td>${esc(c.category || "—")}</td>
+          <td>${esc(c.jurisdiction || "—")}</td>
+          <td>${fmtDate(c.start_date)}</td><td>${fmtDate(c.end_date)}</td>
+          <td>${statusBadge(c.status)}</td></tr>`).join("")}
+      </table></div>`;
+    } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+  }
+  document.getElementById("caseSearchBtn").addEventListener("click", load);
+  document.getElementById("caseQ").addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+  load();
+}
+
+/* ---------- 9.3 Case detail ---------- */
+async function pageCaseDetail(container, { id }) {
+  container.innerHTML = loadingState();
+  let caseRow;
+  try { caseRow = await apiGet("/cases/" + id); } catch (err) { container.innerHTML = errorState(err, "renderRoute()"); return; }
+  const [graph] = await Promise.all([apiGet("/graph/case/" + id + qs({ hops: 1, limit: 200 })).catch((e) => null)]);
+
+  const byType = {};
+  for (const n of (graph && graph.nodes) || []) byType[n.type] = (byType[n.type] || 0) + 1;
+  const sum = (t) => byType[t] || 0;
+
+  container.innerHTML = pageHead("Case", caseRow.official_case_number || caseRow.case_id,
+    statusBadge(caseRow.status)) +
+  `<div class="detail-header"><div>
+    <h1>${esc(caseRow.case_name || "(untitled case)")}</h1>
+    <div class="sub">Official number: <span class="mono">${esc(caseRow.official_case_number || "—")}</span></div>
+  </div></div>
+  <div class="panel"><div class="form-grid">
+    <div><div class="kv"><b>Category:</b> ${esc(caseRow.category || "—")}</div></div>
+    <div><div class="kv"><b>Jurisdiction:</b> ${esc(caseRow.jurisdiction || "—")}</div></div>
+    <div><div class="kv"><b>Operation:</b> ${esc(caseRow.operation_name || "—")}</div></div>
+    <div><div class="kv"><b>Date range:</b> ${fmtDate(caseRow.start_date)} → ${fmtDate(caseRow.end_date)}</div></div>
+  </div>
+  ${caseRow.description ? `<div class="kv mt"><b>Description:</b> ${esc(caseRow.description)}</div>` : ""}</div>
+  <div class="kpis">
+    <div class="kpi"><div class="num">${graph ? sum("PERSON") : "—"}</div><div class="lab">People</div></div>
+    <div class="kpi green"><div class="num">${graph ? sum("ORGANIZATION") + sum("AGENCY") : "—"}</div><div class="lab">Organizations</div></div>
+    <div class="kpi purple"><div class="num">${graph ? sum("EVENT") : "—"}</div><div class="lab">Events</div></div>
+    <div class="kpi amber"><div class="num">${graph ? sum("LOCATION") : "—"}</div><div class="lab">Locations</div></div>
+  </div>
+  <div class="tabs" id="caseTabs"></div>
+  <div id="caseTabBody"></div>`;
+
+  const tabs = [
+    { id: "cOverview", label: "Overview", active: true },
+    { id: "cNetwork", label: "Network", active: false },
+    { id: "cTimeline", label: "Timeline", active: false },
+    { id: "cEntities", label: "Entities", active: false },
+    { id: "cEvents", label: "Events", active: false },
+    { id: "cSources", label: "Sources", active: false },
+    { id: "cChanges", label: "Changes", active: false },
+  ];
+  const tabsEl = document.getElementById("caseTabs");
+  tabsEl.innerHTML = tabs.map((t) => `<button class="tab-btn ${t.active ? "active" : ""}" data-tab="${t.id}">${t.label}</button>`).join("");
+  tabsEl.addEventListener("click", (e) => {
+    const b = e.target.closest(".tab-btn");
+    if (!b) return;
+    tabsEl.querySelectorAll(".tab-btn").forEach((x) => x.classList.toggle("active", x === b));
+    loadCaseTab(b.dataset.tab, id, graph);
+  });
+  loadCaseTab("cOverview", id, graph);
+}
+
+async function loadCaseTab(tab, caseId, graph) {
+  const body = document.getElementById("caseTabBody");
+  if (tab === "cOverview") {
+    const nodes = (graph && graph.nodes) || [];
+    const people = nodes.filter((n) => n.type === "PERSON" || n.type === "AGENCY");
+    const orgs = nodes.filter((n) => n.type === "ORGANIZATION");
+    const events = nodes.filter((n) => n.type === "EVENT");
+    const locs = nodes.filter((n) => n.type === "LOCATION");
+    const renderList = (arr, kind) => arr.length ? `<div class="grid2">${arr.map((n) => `<div class="card"><div class="t">${esc(n.name)}</div><div class="s">${esc(n.type)}</div><div class="m"><button class="btn sm" onclick="navigate('#/${kind}/${esc(n.entity_id || n.event_id || n.case_id)}')">Open</button></div></div>`).join("")}</div>` : '<span class="muted small">None documented.</span>';
+    // Location graph nodes carry the entity id; the entity detail view
+    // exposes the Location record (location_id + entity_id) so location
+    // nodes open through #/entities/{entity_id}.
+    body.innerHTML =
+      section("People") + renderList(people, "entities") +
+      section("Organizations") + renderList(orgs, "entities") +
+      section("Events") + renderList(events, "events") +
+      section("Locations") + renderList(locs, "entities");
+  } else if (tab === "cNetwork") {
+    body.innerHTML = `<div id="graphPane">${loadingState()}</div>`;
+    loadNetworkTab("case", caseId, 1, "graphPane");
+  } else if (tab === "cTimeline") {
+    body.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/timeline/case/" + caseId);
+      const items = data.items || [];
+      body.innerHTML = items.length ? renderTimeline(items) : emptyState("≡", "No dated records for this case.");
+    } catch (err) { body.innerHTML = errorState(err, "loadCaseTab('cTimeline','" + caseId + "')"); }
+  } else if (tab === "cEntities") {
+    const nodes = (graph && graph.nodes) || [];
+    const ents = nodes.filter((n) => n.node_kind === "entity");
+    body.innerHTML = ents.length ? `<div class="grid2">${ents.map((n) => `<div class="card"><div class="t">${esc(n.name)}</div><div class="s">${esc(n.type)} · ${esc(n.status)}</div><div class="m"><button class="btn sm" onclick="navigate('#/entities/${esc(n.entity_id)}')">Open</button></div></div>`).join("")}</div>` : emptyState("◎", "No entities documented for this case.");
+  } else if (tab === "cEvents") {
+    const nodes = (graph && graph.nodes) || [];
+    const evs = nodes.filter((n) => n.node_kind === "event");
+    body.innerHTML = evs.length ? evs.map((n) => `<div class="card mb"><div class="t">${esc(n.name)}</div><div class="s">${esc(n.event_type || "")}${n.date_precision ? " · " + esc(n.date_precision) : ""}${n.start_date ? " · " + esc(n.start_date) : ""}</div><div class="m"><button class="btn sm" onclick="navigate('#/events/${esc(n.event_id)}')">Open</button></div></div>`).join("") : emptyState("◷", "No events documented for this case.");
+  } else if (tab === "cSources") {
+    body.innerHTML = `<div class="panel">${emptyState("☰", "Data unavailable for this view.", "")}
+      <div class="muted small" style="margin-top:10px">No case-to-source endpoint exists (a <code>GET /cases/{id}/sources</code> API would be required). Sources can still be explored globally and per-entity.</div>
+      <div class="mt"><button class="btn sm" onclick="navigate('#/sources')">Browse all sources</button></div></div>`;
+  } else if (tab === "cChanges") {
+    body.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/changes" + qs({ limit: 500 }));
+      const items = (data.items || []).filter((c) => {
+        const d = c.details || {};
+        return d.case_id === caseId || d.id === "case:" + caseId || d.source === "case:" + caseId || d.target === "case:" + caseId;
+      });
+      body.innerHTML = items.length ? items.map((c) => `<div class="card mb"><div class="m"><span class="badge ${esc(c.significance)}">${esc(c.significance)}</span><span class="badge neutral">${esc(c.category)}</span><span class="muted small">${fmtDT(c.created_at)}</span></div><div class="s mt">${esc(JSON.stringify(c.details || {}))}</div></div>`).join("") : emptyState("▲", "No detected changes for this case yet.");
+    } catch (err) { body.innerHTML = errorState(err, "loadCaseTab('cChanges','" + caseId + "')"); }
+  }
+}
+
+/* ---------- 9.4 Entities list ---------- */
+async function pageEntities(container) {
+  container.innerHTML = pageHead("Entities", "Trusted entities — people, organizations, agencies, locations") +
+    `<div class="panel"><div class="row">
+      <select id="entType" style="max-width:220px">
+        <option value="">All types</option><option>PERSON</option><option>ORGANIZATION</option><option>AGENCY</option><option>LOCATION</option><option>OTHER</option>
+      </select>
+      <input id="entQ" placeholder="Search by canonical name" style="max-width:300px">
+      <button class="btn primary sm" id="entSearchBtn">Search</button>
+    </div><div id="entList" class="mt"></div></div>`;
+  async function load() {
+    const box = document.getElementById("entList");
+    box.innerHTML = loadingState();
+    try {
+      const type = document.getElementById("entType").value;
+      const q = document.getElementById("entQ").value.trim();
+      let data = await apiGet("/entities" + qs({ entity_type: type, limit: 400 }));
+      let items = data.items || [];
+      if (q) items = items.filter((e) => _norm(e.canonical_name).includes(_norm(q)));
+      if (!items.length) {
+        box.innerHTML = emptyState("◎", "No entities found.", `<button class="btn primary sm" onclick="navigate('#/data')">Upload a document to begin</button>`);
+        return;
+      }
+      box.innerHTML = `<div class="muted small mb">${items.length} entity(ies) — an appearance in investigation data is not a determination of wrongdoing.</div><div class="grid2">` +
+        items.map((e) => `<div class="card"><div class="row"><div class="t">${esc(e.canonical_name)}</div></div>
+          <div class="m">${typeBadge(e.entity_type)} ${statusBadge(e.status)}</div>
+          <div class="m"><button class="btn sm" onclick="navigate('#/entities/${e.entity_id}')">Documented investigation history</button></div></div>`).join("") + "</div>";
+    } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+  }
+  document.getElementById("entSearchBtn").addEventListener("click", load);
+  document.getElementById("entQ").addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+  document.getElementById("entType").addEventListener("change", load);
+  load();
+}
+
+/* ---------- 9.5 Entity detail (person / org / location) ---------- */
+async function pageEntityDetail(container, { id }) {
+  container.innerHTML = loadingState();
+  let entity, history, cross, graph;
+  try {
+    [entity, history, cross, graph] = await Promise.all([
+      apiGet("/entities/" + id),
+      apiGet("/entities/" + id + "/history").catch((e) => null),
+      apiGet("/entities/" + id + "/cross-case").catch((e) => null),
+      apiGet("/graph/entity/" + id + qs({ hops: 1, limit: 200 })).catch((e) => null),
+    ]);
+  } catch (err) { container.innerHTML = errorState(err, "renderRoute()"); return; }
+
+  const h = history || {};
+  const aliases = (h.entity && h.entity.aliases) || [];
+  const isPerson = entity.entity_type === "PERSON";
+  const title = isPerson ? "Documented Investigation History" : "Documented Investigation History";
+
+  container.innerHTML = pageHead("Entity", entity.entity_type + " · " + entity.status,
+    `<button class="btn ok sm" id="entBookmarkBtn" data-eid="${id}" data-name="${esc(entity.canonical_name)}" onclick="toggleEntityBookmark()">Add bookmark</button> ${statusBadge(entity.status)}`) +
+  `<div class="detail-header"><div>
+    <h1>${esc(entity.canonical_name)}</h1>
+    <div class="sub">${typeBadge(entity.entity_type)} ${aliases.length ? `<span class="muted">Aliases: ${esc(aliases.join(", "))}</span>` : ""}</div>
+  </div></div> +
+  <div class="panel"><div class="form-grid">
+    <div><div class="kv"><b>Status:</b> ${esc(entity.status)}</div></div>
+    <div><div class="kv"><b>Entity id:</b> <span class="mono">${esc(entity.entity_id)}</span></div></div>
+    ${entity.location ? `<div><div class="kv"><b>Location id:</b> <span class="mono">${esc(entity.location.location_id)}</span></div></div>` : ""}
+    <div><div class="kv"><b>Updated:</b> ${fmtDT(entity.updated_at)}</div></div>
+  </div></div>
+  <div class="kpis">
+    <div class="kpi amber"><div class="num">${h.case_count ?? "—"}</div><div class="lab">Associated cases</div></div>
+    <div class="kpi purple"><div class="num">${(h.events || []).length}</div><div class="lab">Events</div></div>
+    <div class="kpi"><div class="num">${(h.people || []).length}</div><div class="lab">People</div></div>
+    <div class="kpi green"><div class="num">${(h.organizations || []).length}</div><div class="lab">Organizations</div></div>
+    <div class="kpi"><div class="num">${(h.locations || []).length}</div><div class="lab">Locations</div></div>
+    <div class="kpi"><div class="num">${(h.sources || []).length}</div><div class="lab">Sources</div></div>
+  </div>
+  <div class="tabs" id="entTabs"></div>
+  <div id="entTabBody"></div>`;
+  renderBookmarkButton(id);
+
+  const tabs = [
+    { id: "eOverview", label: "Overview", active: true },
+    { id: "eTimeline", label: "Timeline", active: false },
+    { id: "eCases", label: "Cases", active: false },
+    { id: "eNetwork", label: "Network", active: false },
+    { id: "eEvents", label: "Events", active: false },
+    { id: "eSources", label: "Sources", active: false },
+    { id: "eCross", label: "Cross-Case Connections", active: false },
+  ];
+  const tabsEl = document.getElementById("entTabs");
+  tabsEl.innerHTML = tabs.map((t) => `<button class="tab-btn ${t.active ? "active" : ""}" data-tab="${t.id}">${t.label}</button>`).join("");
+  tabsEl.addEventListener("click", (e) => {
+    const b = e.target.closest(".tab-btn");
+    if (!b) return;
+    tabsEl.querySelectorAll(".tab-btn").forEach((x) => x.classList.toggle("active", x === b));
+    loadEntityTab(b.dataset.tab, id, entity, h, cross, graph);
+  });
+  loadEntityTab("eOverview", id, entity, h, cross, graph);
+}
+
+async function loadEntityTab(tab, id, entity, h, cross, graph) {
+  const body = document.getElementById("entTabBody");
+  const linkList = (arr, href) => (arr || []).length ? `<div class="grid2">${arr.map((x) => `<div class="card"><div class="t">${esc(x.canonical_name || x.title || x.case_name || x.case_number || x.publisher || "")}</div><div class="s">${esc(x.entity_type || x.event_type || x.source_type || "")}</div><div class="m"><button class="btn sm" onclick="navigate('${href.replace("{id}", x.entity_id || x.case_id || x.event_id || x.source_id)}')">Open</button></div></div>`).join("")}</div>` : '<span class="muted small">None documented.</span>';
+  if (tab === "eOverview") {
+    const rels = h.relationships || [];
+    const facts = h.facts || [];
+    let html = "";
+    if (rels.length) {
+      html += section("Confirmed relationships") + `<div class="grid2">` + rels.map((r) =>
+        `<div class="card"><div class="t">${esc(r.source_entity_id === id ? "this entity" : "connected")} —${esc(r.relationship_type)}→ ${esc(r.target_entity_id === id ? "this entity" : "connected")}</div><div class="s">${esc(r.classification)} · ${esc(r.status)}${r.confidence != null ? " · conf " + r.confidence : ""}</div></div>`).join("") + `</div>`;
+    }
+    if (facts.length) {
+      html += section("Confirmed facts") + `<div class="grid2">` + facts.map((f) =>
+        `<div class="card"><div class="t">—${esc(f.predicate)}→</div><div class="s">case ${esc(f.case_id ? "linked" : "—")} · event ${esc(f.event_id ? "linked" : "—")}</div></div>`).join("") + `</div>`;
+    }
+    if (!rels.length && !facts.length) html += emptyState("◎", "No confirmed relationships yet.", `<button class="btn primary sm" onclick="navigate('#/data')">Review pending candidates</button>`);
+    try {
+      const p = await apiGet("/priority/" + id);
+      html += renderPriorityPanel(p);
+    } catch (e) { /* entities outside the trusted analytics graph get no score */ }
+    body.innerHTML = html;
+  } else if (tab === "eTimeline") {
+    body.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/entities/" + id + "/timeline");
+      const items = data.items || [];
+      body.innerHTML = items.length ? renderTimeline(items) : emptyState("≡", "No dated trusted records for this entity.");
+    } catch (err) { body.innerHTML = errorState(err, "loadEntityTab('eTimeline','" + id + "')"); }
+  } else if (tab === "eCases") {
+    const cases = h.cases || [];
+    body.innerHTML = cases.length ? `<div class="grid2">${cases.map((c) => `<div class="card"><div class="t">${esc(c.case_name || "(untitled)")}</div><div class="s mono">${esc(c.official_case_number || "")}</div><div class="s">${esc(c.jurisdiction || "")} · ${esc(c.status || "")}</div><div class="m"><button class="btn sm" onclick="navigate('#/cases/${c.case_id}')">Open case</button></div></div>`).join("")}</div>` : emptyState("◈", "No trusted case associations found.");
+  } else if (tab === "eNetwork") {
+    body.innerHTML = `<div id="graphPane">${loadingState()}</div>`;
+    loadNetworkTab("entity", id, 1, "graphPane");
+  } else if (tab === "eEvents") {
+    const events = h.events || [];
+    body.innerHTML = events.length ? `<div class="grid2">${events.map((e) => `<div class="card"><div class="t">${esc(e.title)}</div><div class="s">${esc(e.event_type)}${e.date_precision ? " · " + esc(e.date_precision) : ""}${e.start_date ? " · " + esc(e.start_date) : ""}</div><div class="m"><button class="btn sm" onclick="navigate('#/events/${e.event_id}')">Open event</button></div></div>`).join("")}</div>` : emptyState("◷", "No trusted event associations found.");
+  } else if (tab === "eSources") {
+    const srcs = h.sources || [];
+    body.innerHTML = srcs.length ? `<div class="grid2">${srcs.map((s) => `<div class="card"><div class="t">${esc(s.publisher || s.source_id)}</div><div class="s">${esc(s.source_type)}${s.publication_date ? " · " + esc(s.publication_date) : ""}</div></div>`).join("")}</div>` : emptyState("☰", "No sources referenced.");
+  } else if (tab === "eCross") {
+    const c = cross || {};
+    const cases = c.cases || [];
+    body.innerHTML = cases.length
+      ? `<div class="panel"><div class="kv">One canonical entity across <b>${c.case_count}</b> trusted case(s) — never one node per case. Shared identity is a documented association, not proof of wrongdoing.</div></div>` +
+        cases.map((cs) => `<div class="card mb"><div class="t">${esc(cs.case_number || cs.case_name || "(case)")}</div>
+          <div class="s">${esc(cs.status || "")} · ${esc(cs.jurisdiction || "")}</div>
+          <div class="s mt">Entities: ${(cs.entities || []).map((e) => `${esc(e.canonical_name)} (${esc(e.relationship_type)})`).join(", ") || "—"}</div>
+          <div class="s">Events: ${(cs.events || []).map((e) => esc(e.title)).join(", ") || "—"}</div>
+          <div class="s">Evidence references: ${cs.evidence_count || 0}</div></div>`).join("")
+      : emptyState("◈", "No trusted cross-case connections found.");
+  }
+}
+
+/* ---------- 9.55 Priority + entity bookmarks ---------- */
+const PRIO_MAX = { recency: 30, cross_cluster: 25, centrality: 20, case_relevance: 15, source_diversity: 10 };
+function renderPriorityPanel(p) {
+  const comps = p.breakdown || {};
+  const total = Number(p.total);
+  return section("Investigation priority") + `<div class="panel">
+    <div class="priority-total"><span class="n">${Number.isFinite(total) ? Math.round(total) : "—"}</span><span class="of">/ 100 — analytical review-prioritization signal, not guilt or criminality</span></div>
+    ${Object.entries(comps).map(([k, v]) => {
+      const max = PRIO_MAX[k] || 20;
+      const w = Math.min(100, Math.max(0, ((v && v.score) || 0) / max * 100));
+      return `<div class="priority-row"><span class="p-label">${esc(k.replace(/_/g, " "))}</span><div class="priority-bar"><div style="width:${w}%"></div></div><span class="p-val">${v ? (v.score ?? "—") : "—"}</span></div>`;
+    }).join("")}
+    <div class="confidence-note">${esc(p.disclaimer || "")}</div>
+  </div>`;
+}
+async function toggleEntityBookmark() {
+  const btn = document.getElementById("entBookmarkBtn");
+  if (!btn) return;
+  const entityId = btn.dataset.eid, name = btn.dataset.name || "";
+  try {
+    const d = await apiGet("/bookmarks");
+    const b = (d.items || []).find((x) => x.subject_kind === "entity" && x.subject_id === entityId);
+    if (b) { await api("/bookmarks/" + b.bookmark_id, { method: "DELETE" }); toast("Bookmark removed.", "warn"); }
+    else { await apiJSON("POST", "/bookmarks", { subject_kind: "entity", subject_id: entityId, subject_name: name, created_by: "web-investigator" }); toast("Bookmarked.", "ok"); }
+    renderBookmarkButton(entityId);
+  } catch (err) { toast(err.message, "bad"); }
+}
+async function renderBookmarkButton(entityId) {
+  const btn = document.getElementById("entBookmarkBtn");
+  if (!btn) return;
+  try {
+    const d = await apiGet("/bookmarks");
+    const b = (d.items || []).find((x) => x.subject_kind === "entity" && x.subject_id === entityId);
+    btn.className = "btn " + (b ? "warn" : "ok") + " sm";
+    btn.textContent = b ? "Remove bookmark" : "Add bookmark";
+  } catch (e) { /* bookmark state unavailable — button stays default */ }
+}
+function bookmarkHref(b) {
+  if (!b) return "#/workspaces";
+  switch (b.subject_kind) {
+    case "entity": return "#/entities/" + b.subject_id;
+    case "case": return "#/cases/" + b.subject_id;
+    case "event": return "#/events/" + b.subject_id;
+    case "location": return "#/locations/" + b.subject_id;
+    default: return "#/workspaces";
+  }
+}
+async function removeBookmark(bookmarkId) {
+  try {
+    await api("/bookmarks/" + bookmarkId, { method: "DELETE" });
+    toast("Bookmark removed.", "warn");
+    renderRoute();
+  } catch (err) { toast(err.message, "bad"); }
+}
+
+/* ---------- 9.6 Events list + detail ---------- */
+async function pageEvents(container) {
+  container.innerHTML = pageHead("Events", "Trusted events — dates shown at recorded precision") +
+    `<div class="panel"><div class="row">
+      <select id="evType" style="max-width:240px"><option value="">All event types</option>
+        <option>OPERATION</option><option>ARREST</option><option>SEIZURE</option><option>RAID</option><option>INVESTIGATION</option><option>SEARCH</option><option>COURT_PROCEEDING</option><option>INTERCEPTION</option><option>OTHER</option></select>
+      <button class="btn primary sm" id="evLoadBtn">Apply</button>
+    </div><div id="evList" class="mt"></div></div>`;
+  async function load() {
+    const box = document.getElementById("evList");
+    box.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/events" + qs({ event_type: document.getElementById("evType").value, limit: 300 }));
+      const items = data.items || [];
+      if (!items.length) { box.innerHTML = emptyState("◷", "No events found.", `<button class="btn primary sm" onclick="navigate('#/data')">Upload a document to begin</button>`); return; }
+      box.innerHTML = `<div class="muted small mb">${data.total} event(s) — a MONTH or YEAR precision is never displayed as an exact day.</div><div class="grid2">` +
+        items.map((e) => `<div class="card"><div class="t">${esc(e.title)}</div>
+          <div class="m">${typeBadge(e.event_type)} <span class="pill">${esc(e.date_precision || "UNKNOWN")}</span></div>
+          <div class="s">${e.start_date ? esc(e.start_date) + (e.end_date ? " → " + esc(e.end_date) : "") : "Date unknown"}</div>
+          <div class="m"><button class="btn sm" onclick="navigate('#/events/${e.event_id}')">Open event</button></div></div>`).join("") + "</div>";
+    } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+  }
+  document.getElementById("evLoadBtn").addEventListener("click", load);
+  load();
+}
+
+async function pageEventDetail(container, { id }) {
+  container.innerHTML = loadingState();
+  let ev;
+  try { ev = await apiGet("/events/" + id); } catch (err) { container.innerHTML = errorState(err, "renderRoute()"); return; }
+  let locName = null, caseRow = null;
+  if (ev.location_id) { try { const l = await apiGet("/locations/" + ev.location_id); locName = l.canonical_name; } catch (e) {} }
+  if (ev.case_id) { try { caseRow = await apiGet("/cases/" + ev.case_id); } catch (e) {} }
+  container.innerHTML = pageHead("Event", ev.event_type, typeBadge(ev.event_type)) +
+  `<div class="detail-header"><div><h1>${esc(ev.title)}</h1></div></div>
+  <div class="panel"><div class="form-grid">
+    <div><div class="kv"><b>Date:</b> ${ev.start_date ? esc(ev.start_date) + (ev.end_date ? " → " + esc(ev.end_date) : "") : "Unknown"}</div></div>
+    <div><div class="kv"><b>Date precision:</b> <span class="pill">${esc(ev.date_precision || "UNKNOWN")}</span> — approximate dates are never presented as exact.</div></div>
+    <div><div class="kv"><b>Location:</b> ${locName ? esc(locName) : "—"}</div></div>
+    <div><div class="kv"><b>Case:</b> ${caseRow ? `<a href="#/cases/${caseRow.case_id}">${esc(caseRow.official_case_number || caseRow.case_name || "(case)")}</a>` : "—"}</div></div>
+  </div>${ev.description ? `<div class="kv mt"><b>Description:</b> ${esc(ev.description)}</div>` : ""}</div>
+  <div class="tabs" id="evTabs"><button class="tab-btn active" data-tab="o">Overview</button><button class="tab-btn" data-tab="n">Network</button><button class="tab-btn" data-tab="t">Timeline</button></div>
+  <div id="evTabBody"></div>`;
+  const tabsEl = document.getElementById("evTabs");
+  tabsEl.addEventListener("click", (e) => {
+    const b = e.target.closest(".tab-btn");
+    if (!b) return;
+    tabsEl.querySelectorAll(".tab-btn").forEach((x) => x.classList.toggle("active", x === b));
+    loadEventTab(b.dataset.tab, id);
+  });
+  loadEventTab("o", id);
+}
+async function loadEventTab(tab, id) {
+  const body = document.getElementById("evTabBody");
+  if (tab === "o") {
+    body.innerHTML = loadingState();
+    try {
+      const [graph] = await Promise.all([apiGet("/graph/event/" + id + qs({ hops: 1, limit: 200 })).catch((e) => null)]);
+      const nodes = (graph && graph.nodes) || [];
+      const people = nodes.filter((n) => n.type === "PERSON" || n.type === "AGENCY");
+      const orgs = nodes.filter((n) => n.type === "ORGANIZATION");
+      body.innerHTML = section("Participants") +
+        (people.length ? people.map((n) => `<div class="card mb"><div class="t">${esc(n.name)}</div><div class="s">${esc(n.type)}</div><div class="m"><button class="btn sm" onclick="navigate('#/entities/${esc(n.entity_id)}')">Open</button></div></div>`).join("") : '<span class="muted small">No participants documented.</span>') +
+        section("Organizations") +
+        (orgs.length ? orgs.map((n) => `<div class="card mb"><div class="t">${esc(n.name)}</div><div class="s">${esc(n.type)}</div><div class="m"><button class="btn sm" onclick="navigate('#/entities/${esc(n.entity_id)}')">Open</button></div></div>`).join("") : '<span class="muted small">No organizations documented.</span>');
+    } catch (err) { body.innerHTML = errorState(err, "loadEventTab('o','" + id + "')"); }
+  } else if (tab === "n") {
+    body.innerHTML = `<div id="graphPane">${loadingState()}</div>`;
+    loadNetworkTab("event", id, 1, "graphPane");
+  } else if (tab === "t") {
+    body.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/timeline/global" + qs({ limit: 0 }));
+      const ev = await apiGet("/events/" + id);
+      let items = [];
+      if (ev.case_id) {
+        const cd = await apiGet("/timeline/case/" + ev.case_id);
+        items = (cd.items || []).filter((x) => x.event_id === id || x.case_id === ev.case_id);
+      } else {
+        items = (data.items || []).filter((x) => x.event_id === id);
+      }
+      body.innerHTML = items.length ? renderTimeline(items) : emptyState("≡", "No dated records for this event.");
+    } catch (err) { body.innerHTML = errorState(err, "loadEventTab('t','" + id + "')"); }
+  }
+}
+
+/* ---------- 9.7 Locations list + detail ---------- */
+async function pageLocations(container) {
+  container.innerHTML = pageHead("Locations", "Trusted locations — location_id and entity_id are kept distinct") +
+    `<div class="panel"><div id="locList">${loadingState()}</div></div>`;
+  const box = document.getElementById("locList");
+  try {
+    const data = await apiGet("/locations" + qs({ limit: 300 }));
+    const items = data.items || [];
+    if (!items.length) { box.innerHTML = emptyState("✈", "No locations found."); return; }
+    box.innerHTML = `<div class="muted small mb">${data.total} location(s)</div><div class="grid2">` +
+      items.map((l) => `<div class="card"><div class="t">${esc(l.canonical_name)}</div>
+        <div class="s mono">location_id: ${esc(l.location_id)}</div>
+        <div class="s mono">entity_id: ${esc(l.entity_id)}</div>
+        <div class="s">${esc(l.location_type)}${l.parent_location_id ? " · parent: " + esc(l.parent_location_id) : ""}</div>
+        <div class="m"><button class="btn sm" onclick="navigate('#/locations/${l.location_id}')">Open location</button></div></div>`).join("") + "</div>";
+  } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+}
+
+async function pageLocationDetail(container, { id }) {
+  container.innerHTML = loadingState();
+  let loc;
+  try { loc = await apiGet("/locations/" + id); } catch (err) { container.innerHTML = errorState(err, "renderRoute()"); return; }
+  let history = null;
+  try { history = await apiGet("/entities/" + loc.entity_id + "/history"); } catch (e) {}
+  const h = history || {};
+  container.innerHTML = pageHead("Location", loc.location_type, typeBadge("LOCATION")) +
+  `<div class="detail-header"><div><h1>${esc(loc.canonical_name)}</h1>
+    <div class="sub">Location id: <span class="mono">${esc(loc.location_id)}</span> · underlying entity id: <span class="mono">${esc(loc.entity_id)}</span></div></div></div>
+  <div class="kpis">
+    <div class="kpi purple"><div class="num">${(h.events || []).length}</div><div class="lab">Documented events</div></div>
+    <div class="kpi amber"><div class="num">${h.case_count ?? 0}</div><div class="lab">Cases</div></div>
+    <div class="kpi"><div class="num">${(h.people || []).length}</div><div class="lab">People</div></div>
+    <div class="kpi green"><div class="num">${(h.organizations || []).length}</div><div class="lab">Organizations</div></div>
+    <div class="kpi"><div class="num">${(h.sources || []).length}</div><div class="lab">Sources</div></div>
+  </div>
+  <div class="tabs" id="locTabs"><button class="tab-btn active" data-tab="o">Overview</button><button class="tab-btn" data-tab="n">Network</button><button class="tab-btn" data-tab="t">Timeline</button></div>
+  <div id="locTabBody"></div>`;
+  const tabsEl = document.getElementById("locTabs");
+  tabsEl.addEventListener("click", (e) => {
+    const b = e.target.closest(".tab-btn");
+    if (!b) return;
+    tabsEl.querySelectorAll(".tab-btn").forEach((x) => x.classList.toggle("active", x === b));
+    loadLocationTab(b.dataset.tab, id, loc, h);
+  });
+  loadLocationTab("o", id, loc, h);
+}
+async function loadLocationTab(tab, id, loc, h) {
+  const body = document.getElementById("locTabBody");
+  if (tab === "o") {
+    const events = h.events || [], cases = h.cases || [], people = h.people || [], orgs = h.organizations || [], srcs = h.sources || [];
+    body.innerHTML =
+      section("Location context") +
+      `<div class="panel"><div class="form-grid">
+        <div><div class="kv"><b>Location type:</b> ${esc(loc.location_type)}</div></div>
+        <div><div class="kv"><b>Coordinates:</b> ${loc.latitude != null && loc.longitude != null ? esc(loc.latitude + ", " + loc.longitude) : "not recorded — no map integration is active"}</div></div>
+        <div><div class="kv"><b>Parent location:</b> ${loc.parent_location_id ? esc(loc.parent_location_id) : "—"}</div></div>
+      </div>
+      <div class="muted small mt">Association with investigations is a documented fact, not a determination that the location itself is criminal.</div></div>` +
+      section("Documented events") + (events.length ? events.map((e) => `<div class="card mb"><div class="t">${esc(e.title)}</div><div class="s">${esc(e.event_type)}${e.date_precision ? " · " + esc(e.date_precision) : ""}${e.start_date ? " · " + esc(e.start_date) : ""}</div><div class="m"><button class="btn sm" onclick="navigate('#/events/${e.event_id}')">Open event</button></div></div>`).join("") : '<span class="muted small">No documented events.</span>') +
+      section("Cases") + (cases.length ? cases.map((c) => `<div class="card mb"><div class="t">${esc(c.case_name || "(untitled)")}</div><div class="s mono">${esc(c.official_case_number || "")}</div><div class="m"><button class="btn sm" onclick="navigate('#/cases/${c.case_id}')">Open case</button></div></div>`).join("") : '<span class="muted small">No documented cases.</span>');
+  } else if (tab === "n") {
+    body.innerHTML = `<div id="graphPane">${loadingState()}</div>`;
+    loadNetworkTab("location", id, 1, "graphPane");
+  } else if (tab === "t") {
+    body.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/entities/" + loc.entity_id + "/timeline");
+      const items = data.items || [];
+      body.innerHTML = items.length ? renderTimeline(items) : emptyState("≡", "No dated trusted records for this location.");
+    } catch (err) { body.innerHTML = errorState(err, "loadLocationTab('t','" + id + "')"); }
+  }
+}
+
+/* ---------- 9.8 Network Explorer ---------- */
+async function pageNetwork(container) {
+  container.innerHTML = pageHead("Network Explorer", "Trusted knowledge graph — confirmed records only") +
+  `<div class="grid3 mb">
+    <div class="panel"><h2>Entity center</h2>
+      <input id="netEntityQ" placeholder="Search an entity, then pick one" list="netEntityList">
+      <datalist id="netEntityList"></datalist>
+      <div id="netEntityResults"></div>
+      <div class="mt"><div class="row">
+        <button class="btn primary sm" id="netCenterBtn" disabled>Center graph</button>
+      </div></div>
+    </div>
+    <div class="panel"><h2>Graph statistics</h2><div id="netStats">${loadingState()}</div></div>
+    <div class="panel"><h2>Shortest path</h2>
+      <label>From (entity id)</label><input id="pathA" placeholder="paste entity id">
+      <label>To (entity id)</label><input id="pathB" placeholder="paste entity id">
+      <div class="mt"><button class="btn primary sm" id="pathBtn">Find shortest trusted path</button></div>
+      <div id="pathOut" class="mt"></div>
+    </div>
+  </div>
+  <div class="panel"><h2>Connected components</h2><div id="netComponents">${loadingState()}</div></div>
+  <div class="panel"><h2>Network clusters</h2><div id="netClusters">${loadingState()}</div></div>
+  <div class="panel"><h2>Graph view</h2>
+  <div class="row" id="graphFilterBar" style="margin-bottom:8px">
+    <select id="gfEntityType" style="max-width:180px"><option value="">All entity types</option><option>PERSON</option><option>ORGANIZATION</option><option>AGENCY</option><option>LOCATION</option><option>EVENT</option><option>CASE</option></select>
+    <input id="gfRelType" placeholder="Relationship type (e.g. ARRESTED_IN)" style="max-width:240px">
+    <input id="gfCaseId" placeholder="Case id (optional filter)" style="max-width:220px">
+    <input id="gfSearch" placeholder="Search within graph" style="max-width:190px" aria-label="Search within graph">
+    <button class="btn primary sm" id="gfApply">Apply filters</button>
+    <button class="btn ghost sm" id="gfReset">Reset</button>
+    <button class="btn ghost sm" id="netReset">Clear graph</button>
+  </div>
+  <div class="muted small mb">Filters run on the backend trusted-graph endpoints — candidate data never enters.</div>
+  <div id="graphPane">${emptyState("◉", "Select an entity above to center the trusted graph.")}</div></div>`;
+
+  // entity picker
+  const qInput = document.getElementById("netEntityQ");
+  let pickedEntity = null;
+  qInput.addEventListener("input", () => {
+    clearTimeout(window.__netSearchT);
+    window.__netSearchT = setTimeout(async () => {
+      const q = qInput.value.trim();
+      const box = document.getElementById("netEntityResults");
+      pickedEntity = null;
+      document.getElementById("netCenterBtn").disabled = true;
+      if (!q) { box.innerHTML = ""; return; }
+      try {
+        const data = await apiGet("/search" + qs({ q, limit: 8 }));
+        const rows = [];
+        for (const e of data.entities || []) rows.push(e);
+        for (const p of data.people || []) if (!rows.some((r) => r.entity_id === p.entity_id)) rows.push(p);
+        for (const o of data.organizations || []) if (!rows.some((r) => r.entity_id === o.entity_id)) rows.push(o);
+        box.innerHTML = rows.map((e) => `<button class="sr" onclick="pickNetEntity('${e.entity_id}','${esc(e.canonical_name)}')"><div><div class="name">${esc(e.canonical_name)}</div><div class="sub">${esc(e.entity_type)}</div></div></button>`).join("") || '<span class="muted small">No entities found.</span>';
+      } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+    }, 250);
+  });
+  window.pickNetEntity = (eid, name) => {
+    pickedEntity = { id: eid, name };
+    qInput.value = name;
+    document.getElementById("netEntityResults").innerHTML = "";
+    document.getElementById("netCenterBtn").disabled = false;
+  };
+  document.getElementById("netCenterBtn").addEventListener("click", () => {
+    if (pickedEntity) {
+      window.__netCenter = pickedEntity;
+      loadNetworkTab("entity", pickedEntity.id, 1, "graphPane");
+    }
+  });
+
+  // graph filters (forwarded to the trusted graph endpoints)
+  document.getElementById("gfApply").addEventListener("click", () => {
+    graphFilters.entity_type = document.getElementById("gfEntityType").value;
+    graphFilters.relationship_type = document.getElementById("gfRelType").value.trim();
+    graphFilters.case_id = document.getElementById("gfCaseId").value.trim();
+    if (window.__netCenter) loadNetworkTab("entity", window.__netCenter.id, currentHops, "graphPane");
+    else toast("Center an entity first — filters apply to the centered graph.", "warn");
+  });
+  document.getElementById("gfReset").addEventListener("click", () => {
+    graphFilters = { relationship_type: "", entity_type: "", case_id: "" };
+    document.getElementById("gfEntityType").value = "";
+    document.getElementById("gfRelType").value = "";
+    document.getElementById("gfCaseId").value = "";
+    if (window.__netCenter) loadNetworkTab("entity", window.__netCenter.id, currentHops, "graphPane");
+  });
+  document.getElementById("netReset").addEventListener("click", () => {
+    window.__netCenter = null;
+    graphFilters = { relationship_type: "", entity_type: "", case_id: "" };
+    document.getElementById("gfEntityType").value = "";
+    document.getElementById("gfRelType").value = "";
+    document.getElementById("gfCaseId").value = "";
+    document.getElementById("gfSearch").value = "";
+    document.getElementById("graphPane").innerHTML = emptyState("◉", "Graph cleared — select an entity to center it again.");
+  });
+  document.getElementById("gfSearch").addEventListener("input", (e) => graphFilterByName(e.target.value.trim()));
+
+  // stats
+  try {
+    const s = await apiGet("/graph/stats");
+    const byT = Object.entries(s.nodes_by_type || {}).map(([t, c]) => `<div class="kv"><b>${esc(t)}:</b> ${c}</div>`).join("");
+    document.getElementById("netStats").innerHTML =
+      `<div class="kv"><b>Total nodes:</b> ${s.total_nodes}</div><div class="kv"><b>Total edges:</b> ${s.total_edges}</div>` + (byT || '<span class="muted small">Empty trusted graph.</span>');
+  } catch (err) { document.getElementById("netStats").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+
+  // components
+  try {
+    const c = await apiGet("/graph/analytics/components");
+    const comps = c.components || [];
+    document.getElementById("netComponents").innerHTML = comps.length
+      ? comps.map((x) => `<div class="card" style="display:inline-block;margin:0 8px 8px 0;min-width:180px"><div class="t">Component ${x.component_id}</div><div class="s">${x.node_count} nodes · ${x.edge_count} edges</div><div class="s">${Object.entries(x.dominant_entity_types || {}).map(([t, n]) => `${esc(t)} ${n}`).join(" · ")}</div></div>`).join("")
+      : '<span class="muted small">No trusted components (empty graph).</span>';
+  } catch (err) { document.getElementById("netComponents").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+
+  // clusters
+  try {
+    const c = await apiGet("/graph/analytics/clusters");
+    const cls = c.clusters || [];
+    document.getElementById("netClusters").innerHTML = cls.length
+      ? cls.map((x) => `<div class="card mb"><div class="t">${esc(x.label)}</div>
+          <div class="s">${x.node_count} nodes · ${x.edge_count} relationships</div>
+          <div class="s">Dominant types: ${Object.entries(x.dominant_entity_types || {}).map(([t, n]) => `${esc(t)} ${n}`).join(" · ")}</div>
+          <div class="s">Cases: ${(x.associated_cases || []).map((id) => esc(id.split(":").pop())).join(", ") || "—"}</div>
+          <div class="s">Geography: ${(x.geographic_distribution || []).map(esc).join(", ") || "—"}</div>
+          <div class="s muted">A cluster is a network-analysis grouping — never a determination of criminality.</div></div>`).join("")
+      : '<span class="muted small">No network clusters detected.</span>';
+  } catch (err) { document.getElementById("netClusters").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+
+  // shortest path
+  document.getElementById("pathBtn").addEventListener("click", async () => {
+    const a = document.getElementById("pathA").value.trim();
+    const b = document.getElementById("pathB").value.trim();
+    const out = document.getElementById("pathOut");
+    if (!a || !b) { out.innerHTML = '<span class="muted small">Provide both entity ids.</span>'; return; }
+    out.innerHTML = loadingState();
+    try {
+      const p = await apiGet("/graph/path" + qs({ source: a, target: b }));
+      if (!p.connected) { out.innerHTML = '<span class="muted small">No trusted path between these entities.</span>'; return; }
+      out.innerHTML = `<div class="kv"><b>Connected:</b> yes · <b>Distance:</b> ${p.distance}</div>
+        <div class="s mt">${(p.path || []).map((n, i) => `${i ? " → " : ""}<b>${esc(n.name)}</b>`).join("")}</div>
+        <div class="s muted">A 2-hop connection is never presented as a direct relationship.</div>`;
+    } catch (err) { out.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  });
+}
+
+/* ---------- 9.9 Timeline ---------- */
+function renderTimeline(items) {
+  return `<div class="tl">` + items.map((e) => {
+    const when = e.date ? `${esc(e.date)} <span class="pill">${esc(e.date_precision || "UNKNOWN")}</span>` : '<span class="pill">date unknown</span>';
+    const pub = e.source_publication_date ? ` · published ${esc(e.source_publication_date)}` : "";
+    return `<div class="tl-item ${esc(e.kind || "")}">
+      <div class="t">${esc(e.title)}</div>
+      <div class="d"><b>Event date:</b> ${when}${pub}</div>
+      ${e.location ? `<div class="d">Location: ${esc(e.location)}</div>` : ""}
+      ${e.case_number ? `<div class="d">Case: ${esc(e.case_number)}</div>` : ""}
+    </div>`;
+  }).join("") + `</div><div class="muted small mt">Event dates and source publication dates are kept separate. Precision is always shown — approximate dates are never rendered as exact.</div>`;
+}
+async function pageTimeline(container) {
+  container.innerHTML = pageHead("Timeline", "Trusted timeline — event dates vs publication dates") +
+  `<div class="panel"><div class="form-grid">
+    <div><label>Case</label><select id="tlCase"><option value="">All cases (global)</option></select></div>
+    <div><label>Event type</label><select id="tlType"><option value="">All</option><option>OPERATION</option><option>ARREST</option><option>SEIZURE</option><option>RAID</option><option>INVESTIGATION</option><option>SEARCH</option><option>COURT_PROCEEDING</option><option>INTERCEPTION</option><option>OTHER</option></select></div>
+    <div><label>Location</label><input id="tlLoc" placeholder="e.g. Mumbai"></div>
+    <div><label>Date from</label><input id="tlFrom" type="date"></div>
+    <div><label>Date to</label><input id="tlTo" type="date"></div>
+    <div style="align-self:end"><button class="btn primary sm" id="tlApply">Apply filters</button></div>
+  </div></div>
+  <div id="tlBody">${loadingState()}</div>`;
+  try {
+    const d = await apiGet("/cases" + qs({ limit: 200 }));
+    const sel = document.getElementById("tlCase");
+    sel.innerHTML = `<option value="">All cases (global)</option>` + (d.items || []).map((c) =>
+      `<option value="${c.case_id}">${esc(c.case_name || c.official_case_number || c.case_id)}</option>`).join("");
+  } catch (e) { /* case list unavailable — global timeline still works */ }
+  async function load() {
+    const body = document.getElementById("tlBody");
+    body.innerHTML = loadingState();
+    try {
+      const caseId = document.getElementById("tlCase").value;
+      const data = caseId
+        ? await apiGet("/timeline/case/" + caseId)
+        : await apiGet("/timeline/global" + qs({
+            event_type: document.getElementById("tlType").value,
+            location: document.getElementById("tlLoc").value.trim(),
+            date_from: document.getElementById("tlFrom").value,
+            date_to: document.getElementById("tlTo").value,
+          }));
+      const items = data.items || [];
+      body.innerHTML = items.length ? `<div class="muted small mb">${items.length} dated record(s)</div>` + renderTimeline(items) : emptyState("≡", "No timeline records match the current filters.");
+    } catch (err) { body.innerHTML = errorState(err, "renderRoute()"); }
+  }
+  document.getElementById("tlApply").addEventListener("click", load);
+  load();
+}
+
+/* ---------- 9.10 What's New (changes) ---------- */
+async function pageChanges(container) {
+  container.innerHTML = pageHead("What's New", "Trusted-graph change detection · snapshot comparison") +
+  `<div class="grid2 mb">
+    <div class="panel"><h2>Snapshots</h2>
+      <div class="row"><button class="btn primary sm" id="snapCreate">Create snapshot of current trusted graph</button></div>
+      <div id="snapList" class="mt">${loadingState()}</div>
+    </div>
+    <div class="panel"><h2>Compare snapshots</h2>
+      <label>Previous snapshot</label><select id="cmpA"></select>
+      <label>Current snapshot</label><select id="cmpB"></select>
+      <div class="mt"><button class="btn primary sm" id="cmpBtn">Compare</button></div>
+      <div id="cmpOut" class="mt"></div>
+    </div>
+  </div>
+  <div class="panel"><h2>Detected changes</h2><div id="chList">${loadingState()}</div></div>`;
+
+  const selA = document.getElementById("cmpA"), selB = document.getElementById("cmpB");
+  async function loadSnaps() {
+    try {
+      const s = await apiGet("/snapshots");
+      const snaps = s.items || [];
+      document.getElementById("snapList").innerHTML = snaps.length
+        ? snaps.map((x) => `<div class="card mb"><div class="row"><span class="pill">v${x.version}</span><span class="muted small">${fmtDT(x.created_at)}</span><span class="muted small">${x.node_count ?? "—"} nodes · ${x.edge_count ?? "—"} edges</span></div><div class="s mono mt">${esc(x.snapshot_id)}</div></div>`).join("")
+        : '<span class="muted small">No snapshots yet. Create one to begin change detection.</span>';
+      const opts = snaps.map((x) => `<option value="${x.snapshot_id}">v${x.version} — ${fmtDT(x.created_at)}</option>`).join("");
+      selA.innerHTML = opts; selB.innerHTML = opts;
+    } catch (err) {
+      document.getElementById("snapList").innerHTML = `<span class="muted small">${esc(err.message)}</span>`;
+    }
+  }
+  document.getElementById("snapCreate").addEventListener("click", async () => {
+    try {
+      const s = await apiJSON("POST", "/snapshots", { label: "Snapshot from web UI", created_by: "web-investigator" });
+      toast("Snapshot created — version " + s.version + ".", "ok");
+      loadSnaps();
+    } catch (err) { toast(err.message, "bad"); }
+  });
+  document.getElementById("cmpBtn").addEventListener("click", async () => {
+    const out = document.getElementById("cmpOut");
+    if (!selA.value || !selB.value) { out.innerHTML = '<span class="muted small">Select two snapshots.</span>'; return; }
+    out.innerHTML = loadingState();
+    try {
+      const r = await apiJSON("POST", "/changes/compare", { previous_snapshot_id: selA.value, current_snapshot_id: selB.value });
+      const ch = r.changes || [];
+      out.innerHTML = `<div class="kv"><b>Total changes:</b> ${r.total} (${r.major} major · ${r.moderate} moderate · ${r.minor} minor)</div>` +
+        (ch.length ? ch.map((c) => `<div class="card mb"><div class="m"><span class="badge ${esc(c.significance)}">${esc(c.significance)}</span><span class="badge neutral">${esc(c.category)}</span><span class="muted small">${fmtDT(c.created_at)}</span></div><div class="s mt">${esc((c.details && (c.details.name || c.details.title)) || c.category)}</div></div>`).join("") : '<span class="muted small">No differences between these snapshots.</span>');
+    } catch (err) { out.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  });
+
+  try {
+    const d = await apiGet("/changes" + qs({ limit: 200 }));
+    const items = d.items || [];
+    const el = document.getElementById("chList");
+    if (!items.length) { el.innerHTML = emptyState("▲", "No detected changes yet. Create a snapshot, make a trusted change, then compare."); return; }
+    const major = items.filter((x) => x.significance === "MAJOR");
+    const moderate = items.filter((x) => x.significance === "MODERATE");
+    const minor = items.filter((x) => x.significance === "MINOR");
+    const group = (label, arr) => arr.length ? section(label) + arr.map(changeCard).join("") : "";
+    el.innerHTML = group("Major", major) + group("Moderate", moderate) + group("Minor", minor);
+  } catch (err) { document.getElementById("chList").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  loadSnaps();
+}
+
+function changeOpenAction(c) {
+  const ref = c.reference_id || "";
+  const sep = ref.indexOf(":");
+  if (sep < 0) return "";
+  const kind = ref.slice(0, sep), id = ref.slice(sep + 1);
+  if (kind === "entity" && id) return `<button class="btn sm" onclick="navigate('#/entities/${id}')">Open entity</button>`;
+  if (kind === "case" && id) return `<button class="btn sm" onclick="navigate('#/cases/${id}')">Open case</button>`;
+  if (kind === "event" && id) return `<button class="btn sm" onclick="navigate('#/events/${id}')">Open event</button>`;
+  return "";
+}
+function changeCard(c) {
+  const summary = (c.details && (c.details.name || c.details.title || c.details.source || c.details.target)) || c.category;
+  return `<div class="card mb">
+    <div class="m"><span class="badge neutral">${esc(c.category)}</span><span class="badge type">${esc(c.kind || "")}</span><span class="muted small">${fmtDT(c.created_at)}</span></div>
+    <div class="s mt">${esc(summary)}${c.reference_id ? ` <span class="muted small mono">${esc(c.reference_id)}</span>` : ""}</div>
+    <div class="ch-details"><details><summary>Change details</summary><pre>${esc(JSON.stringify(c.details || {}, null, 2))}</pre></details></div>
+    <div class="m">${changeOpenAction(c)}</div>
+  </div>`;
+}
+
+/* ---------- 9.11 Workspaces ---------- */
+async function pageWorkspaces(container) {
+  container.innerHTML = pageHead("Workspaces", "Investigation workspaces — pinned subjects, priority, notes") +
+  `<div class="grid2 mb">
+    <div class="panel"><h2>Create workspace</h2>
+      <label>Name</label><input id="wsName" placeholder="e.g. Mumbai Network Investigation">
+      <label>Description</label><input id="wsDesc" placeholder="Optional">
+      <div class="mt"><button class="btn primary sm" id="wsCreate">Create workspace</button></div>
+    </div>
+    <div class="panel"><h2>All workspaces</h2><div id="wsList">${loadingState()}</div></div>
+  </div>
+  <div class="panel"><h2>Active workspace overview</h2><div id="wsOverview">${emptyState("▤", "No workspace selected — pick one above or from the top bar.")}</div></div>`;
+
+  document.getElementById("wsCreate").addEventListener("click", async () => {
+    const name = document.getElementById("wsName").value.trim();
+    if (!name) { toast("Workspace name is required.", "warn"); return; }
+    try {
+      const w = await apiJSON("POST", "/workspaces", { name, description: document.getElementById("wsDesc").value.trim() || null, created_by: "web-investigator" });
+      localStorage.setItem("narc.activeWorkspace", w.workspace_id);
+      activeWorkspaceId = w.workspace_id;
+      toast("Workspace created.", "ok");
+      refreshWorkspacePill();
+      navigate("#/workspaces/" + w.workspace_id);
+    } catch (err) { toast(err.message, "bad"); }
+  });
+
+  try {
+    const d = await apiGet("/workspaces");
+    const items = d.items || [];
+    document.getElementById("wsList").innerHTML = items.length
+      ? items.map((w) => `<div class="card mb"><div class="row"><div class="t">${esc(w.name)}</div><span class="pill">${(w.pins || []).length} pin(s)</span></div><div class="s">${esc(w.description || "No description")}</div><div class="m"><button class="btn sm" onclick="navigate('#/workspaces/${w.workspace_id}')">Open</button></div></div>`).join("")
+      : emptyState("▤", "No workspaces yet. Create one to organize an investigation.");
+    const active = items.find((w) => w.workspace_id === activeWorkspaceId) || items[0];
+    if (active) loadWorkspaceOverview(document.getElementById("wsOverview"), active.workspace_id);
+    else document.getElementById("wsOverview").innerHTML = emptyState("▤", "No workspace selected — create one above or pick one from the top bar.");
+  } catch (err) { document.getElementById("wsList").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+}
+
+async function pageWorkspaceDetail(container, { id }) {
+  container.innerHTML = loadingState();
+  let ws;
+  try { ws = await apiGet("/workspaces/" + id); } catch (err) { container.innerHTML = errorState(err, "renderRoute()"); return; }
+  container.innerHTML = pageHead(ws.name, "Workspace", "") +
+  `<div class="panel"><div class="row">
+    <button class="btn primary sm" id="wsAddPinBtn">Add pin</button>
+    <button class="btn sm" id="wsAddNoteBtn">Add investigator note</button>
+    <button class="btn sm" id="wsRenameBtn">Rename</button>
+    <button class="btn bad sm" id="wsArchiveBtn">Archive</button>
+    <button class="btn ghost sm" id="wsRefreshBtn">Refresh</button>
+  </div>
+  <div class="form-grid hidden" id="wsPinForm">
+    <div><label>Kind</label><select id="pinKind"><option>entity</option><option>case</option><option>event</option><option>location</option><option>relationship</option><option>change</option></select></div>
+    <div><label>Id (entity_id / case_id / event_id / location_id / relationship_id)</label><input id="pinId" placeholder="paste the canonical id"></div>
+    <div><label>Display name (optional)</label><input id="pinName" placeholder="optional"></div>
+    <div style="align-self:end"><button class="btn ok sm" id="pinAdd">Add</button></div>
+  </div>
+  <div class="form-row hidden" id="wsNoteForm" style="margin-top:10px">
+    <label>Note</label><textarea id="noteContent" placeholder="Investigator annotation — never becomes evidence, facts or graph edges"></textarea>
+    <div class="mt"><button class="btn ok sm" id="noteAdd">Save note</button></div>
+  </div>
+  <div class="form-row hidden" id="wsRenameForm" style="margin-top:10px">
+    <div class="form-grid">
+      <div><label>Name</label><input id="wsNewName"></div>
+      <div><label>Description</label><input id="wsNewDesc"></div>
+      <div style="align-self:end"><button class="btn ok sm" id="wsRenameSave">Save changes</button></div>
+    </div>
+  </div>
+  </div>
+  <div id="wsOverviewBody">${loadingState()}</div>`;
+
+  document.getElementById("wsAddPinBtn").addEventListener("click", () => document.getElementById("wsPinForm").classList.toggle("hidden"));
+  document.getElementById("wsAddNoteBtn").addEventListener("click", () => document.getElementById("wsNoteForm").classList.toggle("hidden"));
+  document.getElementById("wsRefreshBtn").addEventListener("click", () => renderRoute());
+  document.getElementById("wsRenameBtn").addEventListener("click", () => {
+    const f = document.getElementById("wsRenameForm");
+    f.classList.toggle("hidden");
+    document.getElementById("wsNewName").value = ws.name;
+    document.getElementById("wsNewDesc").value = ws.description || "";
+  });
+  document.getElementById("wsRenameSave").addEventListener("click", async () => {
+    try {
+      await apiJSON("PUT", "/workspaces/" + id, { name: document.getElementById("wsNewName").value.trim(), description: document.getElementById("wsNewDesc").value.trim() || null });
+      toast("Workspace updated.", "ok");
+      renderRoute();
+    } catch (err) { toast(err.message, "bad"); }
+  });
+  document.getElementById("wsArchiveBtn").addEventListener("click", async () => {
+    if (!confirm("Archive this workspace? Pins and workspace notes will be removed. This cannot be undone.")) return;
+    try {
+      await api("/workspaces/" + id, { method: "DELETE" });
+      localStorage.removeItem("narc.activeWorkspace");
+      activeWorkspaceId = null;
+      toast("Workspace archived.", "warn");
+      navigate("#/workspaces");
+    } catch (err) { toast(err.message, "bad"); }
+  });
+  document.getElementById("pinAdd").addEventListener("click", async () => {
+    try {
+      await apiJSON("POST", `/workspaces/${id}/pins`, { kind: document.getElementById("pinKind").value, id: document.getElementById("pinId").value.trim(), name: document.getElementById("pinName").value.trim() || null });
+      toast("Pin added.", "ok");
+      renderRoute();
+    } catch (err) { toast(err.message, "bad"); }
+  });
+  document.getElementById("noteAdd").addEventListener("click", async () => {
+    const content = document.getElementById("noteContent").value.trim();
+    if (!content) { toast("Note content is required.", "warn"); return; }
+    try {
+      await apiJSON("POST", "/notes", { content, subject_kind: "workspace", subject_id: id, created_by: "web-investigator" });
+      toast("Note saved.", "ok");
+      renderRoute();
+    } catch (err) { toast(err.message, "bad"); }
+  });
+
+  const body = document.getElementById("wsOverviewBody");
+  await loadWorkspaceOverview(body, id);
+}
+
+async function loadWorkspaceOverview(container, wsId) {
+  if (!container) return;
+  container.innerHTML = loadingState();
+  try {
+    const ov = await apiGet(`/workspaces/${wsId}/overview`);
+    const pins = ov.pins || [];
+    container.innerHTML = `
+      <div class="kpis">
+        <div class="kpi"><div class="num">${pins.length}</div><div class="lab">Pinned subjects</div></div>
+        <div class="kpi amber"><div class="num">${ov.change_total ?? 0}</div><div class="lab">Related changes</div></div>
+        <div class="kpi green"><div class="num">${(ov.priorities || []).length}</div><div class="lab">Priority scores</div></div>
+        <div class="kpi"><div class="num">${(ov.notes || []).length}</div><div class="lab">Notes</div></div>
+      </div>` +
+      section("Pinned subjects") +
+      (pins.length ? `<div class="grid2">${pins.map((p) => `<div class="card">
+        <div class="row"><span class="pill">${esc(p.kind)}</span><span class="trust-chip ${p.exists ? "trusted" : "candidate"}">${p.exists ? "resolved" : "missing"}</span></div>
+        <div class="t mt">${esc(p.name || "(no name)")}</div>
+        <div class="s mono mt">${esc(p.kind === "location" ? "location_id: " + p.id + " · entity_id: " + (p.entity_id || "—") : p.id)}</div>
+        <div class="m"><button class="btn ghost sm" onclick="removePin('${wsId}', ${pins.indexOf(p)})">Remove pin</button></div>
+      </div>`).join("")}</div>` : '<span class="muted small">No pins yet — add an entity, case, event, location or relationship.</span>') +
+      section("Investigation priority (pinned entities)") +
+      ((ov.priorities || []).length ? ov.priorities.map((p) => `<div class="card mb">
+        <div class="row"><div class="t">${esc(p.entity_id)}</div><span class="pill">score ${p.total}/100</span></div>
+        <div class="s mt">${Object.entries(p.breakdown || {}).map(([k, v]) => `${esc(k.replace(/_/g, " "))}: ${v.score ?? "—"}`).join(" · ")}</div>
+        <div class="confidence-note">${esc(p.disclaimer || "")}</div>
+      </div>`).join("") : '<span class="muted small">No entity pins — priority is computed for pinned entities only (case/event/relationship pins never fabricate a score).</span>') +
+      section("Related changes") +
+      ((ov.changes || []).length ? ov.changes.map((c) => `<div class="card mb"><div class="m"><span class="badge ${esc(c.significance)}">${esc(c.significance)}</span><span class="badge neutral">${esc(c.category)}</span><span class="muted small">${fmtDT(c.created_at)}</span></div><div class="s mt">${esc((c.details && (c.details.name || c.details.title || c.details.source || c.details.target)) || c.category)}</div></div>`).join("") : '<span class="muted small">No persisted changes related to this workspace yet.</span>') +
+      section("Saved searches") +
+      ((ov.saved_searches || []).length ? ov.saved_searches.map((s) => `<div class="card mb"><div class="t">${esc(s.name)}</div><div class="s mono">${esc(JSON.stringify(s.filters || {}))}</div></div>`).join("") : '<span class="muted small">No saved searches yet.</span>') +
+      section("Bookmarks") +
+      ((ov.bookmarks || []).length ? ov.bookmarks.map((b) => `<div class="card mb"><div class="t">${esc(b.subject_name || b.name || b.subject_id)}</div><div class="s">${esc(b.subject_kind)}</div></div>`).join("") : '<span class="muted small">No bookmarks yet.</span>') +
+      section("Investigator notes") +
+      ((ov.notes || []).length ? ov.notes.map((n) => `<div class="card mb"><div class="s">${esc(n.content)}</div><div class="muted small">${fmtDT(n.created_at)} · ${esc(n.created_by || "—")}</div></div>`).join("") : '<span class="muted small">No notes yet. Notes are investigator annotations only — they never become evidence or graph facts.</span>');
+  } catch (err) {
+    container.innerHTML = errorState(err, "renderRoute()");
+  }
+}
+
+async function removePin(wsId, index) {
+  try { await api("/workspaces/" + wsId + "/pins/" + index, { method: "DELETE" }); toast("Pin removed.", "ok"); renderRoute(); }
+  catch (err) { toast(err.message, "bad"); }
+}
+
+/* ---------- 9.12 Sources ---------- */
+async function pageSources(container) {
+  container.innerHTML = pageHead("Sources", "Documented sources") + `<div class="panel"><div id="srcList">${loadingState()}</div></div>`;
+  const box = document.getElementById("srcList");
+  try {
+    const d = await apiGet("/sources" + qs({ limit: 300 }));
+    const items = d.items || [];
+    if (!items.length) { box.innerHTML = emptyState("☰", "No sources yet.", `<button class="btn primary sm" onclick="navigate('#/data')">Upload a document to create a source</button>`); return; }
+    box.innerHTML = `<div class="muted small mb">${items.length} source(s) · click a source to inspect it</div><div class="grid2">` +
+      items.map((s) => `<div class="card" style="cursor:pointer" onclick="navigate('#/sources/${s.source_id}')"><div class="t">${esc(s.publisher || "(no publisher)")}</div>
+        <div class="s">${esc(s.agency || "")}${s.source_type ? " · " + esc(s.source_type) : ""}</div>
+        <div class="s">${s.publication_date ? "Published " + esc(s.publication_date) : "Publication date unknown"}</div>
+        <div class="m"><button class="btn sm">Inspect source</button></div></div>`).join("") + "</div>";
+  } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+}
+async function pageSourceDetail(container, { id }) {
+  container.innerHTML = loadingState();
+  let source;
+  try { source = await apiGet("/sources/" + id); } catch (err) { container.innerHTML = errorState(err, "renderRoute()"); return; }
+  let doc = null;
+  if (source.document_id) { try { doc = await apiGet("/documents/" + source.document_id); } catch (e) { /* document record unavailable */ } }
+  container.innerHTML = pageHead("Source", source.source_type, statusBadge(source.source_status)) +
+  `<div class="detail-header"><div><h1>${esc(source.publisher || "Unnamed source")}</h1>
+    <div class="sub">Source id: <span class="mono">${esc(source.source_id)}</span></div></div></div>
+  <div class="panel"><div class="form-grid">
+    <div><div class="kv"><b>Agency:</b> ${esc(source.agency || "—")}</div></div>
+    <div><div class="kv"><b>Type:</b> ${esc(source.source_type)}</div></div>
+    <div><div class="kv"><b>Publication date:</b> ${fmtDate(source.publication_date)}</div></div>
+    <div><div class="kv"><b>Document:</b> ${doc ? esc(doc.filename) : "—"}</div></div>
+  </div>${source.source_url ? `<div class="kv mt"><b>Source url:</b> <span class="mono small">${esc(source.source_url)}</span></div>` : ""}</div>`;
+  if (doc) {
+    const text = doc.extracted_text || "";
+    container.innerHTML += `<div class="panel"><h2>Extracted text</h2>
+      ${text ? `<div class="evidence">${esc(text.length > 6000 ? text.slice(0, 6000) + "…" : text)}</div><div class="muted small mt">Showing up to 6,000 characters of the original extraction.</div>` : '<span class="muted small">No extracted text stored for this document.</span>'}</div>`;
+  }
+  container.innerHTML += `<div class="panel"><h2>Evidence references</h2>
+    <div class="muted small">Evidence snippets are browsed from the trusted records that cite this source — open an entity, case or relationship and click a relationship edge for “Why am I seeing this?”. No evidence-by-source listing endpoint exists; nothing is invented here.</div>
+    <div class="mt"><button class="btn sm" onclick="navigate('#/sources')">Back to sources</button></div></div>`;
+}
+
+/* ---------- 9.13 Data Management ---------- */
+async function pageData(container) {
+  const tab = (location.hash.match(/\/data\/(\w+)/) || [])[1] || "upload";
+  container.innerHTML = pageHead("Data Management", "Upload · documents · candidate review") +
+  `<div class="tabs" id="dataTabs">
+    <button class="tab-btn ${tab === "upload" ? "active" : ""}" data-tab="upload">Upload</button>
+    <button class="tab-btn ${tab === "documents" ? "active" : ""}" data-tab="documents">Documents</button>
+    <button class="tab-btn ${tab === "review" ? "active" : ""}" data-tab="review">Candidate review</button>
+  </div><div id="dataBody"></div>`;
+  document.getElementById("dataTabs").addEventListener("click", (e) => {
+    const b = e.target.closest(".tab-btn");
+    if (!b) return;
+    navigate("#/data/" + b.dataset.tab);
+  });
+  loadDataTab(tab);
+}
+async function loadDataTab(tab) {
+  const body = document.getElementById("dataBody");
+  if (tab === "upload") {
+    body.innerHTML = `<div class="grid2">
+      <div class="panel"><h2>Upload document</h2>
+        <div class="dropzone" id="dropzone">
+          <div class="big">⇪</div>
+          <div class="main">Drag & drop a PDF, DOCX or TXT here</div>
+          <div class="small muted mt">or click to select a file</div>
+        </div>
+        <input type="file" id="uploadFile" accept=".pdf,.docx,.txt" class="hidden">
+        <div id="uploadFileMeta" class="mt"></div>
+        <div class="form-grid">
+          <div><label>Publisher</label><input id="uPublisher" placeholder="e.g. Demo Press"></div>
+          <div><label>Agency</label><input id="uAgency" placeholder="e.g. Narcotics Control Bureau"></div>
+          <div><label>Source type</label><select id="uType"><option value="">— unknown —</option><option>OFFICIAL_GOVERNMENT</option><option>OFFICIAL_POLICE</option><option>OFFICIAL_AGENCY</option><option>COURT_PUBLIC_RECORD</option><option>SECONDARY_SOURCE</option></select></div>
+          <div><label>Publication date</label><input id="uPubDate" type="date"></div>
+          <div><label>Case number</label><input id="uCaseNo" placeholder="NCB/MUM/123/2026"></div>
+          <div><label>Case name</label><input id="uCaseName" placeholder="CASE-001"></div>
+        </div>
+        <div class="mt"><button class="btn primary" id="uploadBtn" disabled>Upload & process</button></div>
+        <div id="uploadResult" class="mt"></div>
+      </div>
+      <div class="panel"><h2>Processing status</h2>
+        <div id="procStats">${loadingState()}</div>
+      </div>
+    </div>`;
+    const dz = document.getElementById("dropzone");
+    const fileInput = document.getElementById("uploadFile");
+    dz.addEventListener("click", () => fileInput.click());
+    dz.addEventListener("dragover", (e) => { e.preventDefault(); dz.classList.add("drag"); });
+    dz.addEventListener("dragleave", () => dz.classList.remove("drag"));
+    dz.addEventListener("drop", (e) => { e.preventDefault(); dz.classList.remove("drag"); if (e.dataTransfer.files.length) selectFile(e.dataTransfer.files[0]); });
+    fileInput.addEventListener("change", () => { if (fileInput.files.length) selectFile(fileInput.files[0]); });
+    function selectFile(f) {
+      const ok = /\.(pdf|docx|txt)$/i.test(f.name);
+      document.getElementById("uploadFileMeta").innerHTML = `<div class="card"><div class="row"><div class="t">${esc(f.name)}</div><span class="pill">${esc((f.type || "unknown").split("/")[1] || "file")}</span></div><div class="s">${fmtSize(f.size)}</div>${ok ? "" : '<div class="s" style="color:var(--bad)">Unsupported format — use PDF, DOCX or TXT.</div>'}</div>`;
+      document.getElementById("uploadBtn").disabled = !ok;
+      window.__uploadFile = ok ? f : null;
+    }
+    document.getElementById("uploadBtn").addEventListener("click", async () => {
+      const f = window.__uploadFile;
+      if (!f) { toast("Select a valid file first.", "warn"); return; }
+      const fd = new FormData();
+      fd.append("file", f);
+      const set = (id, name) => { const v = document.getElementById(id).value.trim(); if (v) fd.append(name, v); };
+      set("uPublisher", "publisher"); set("uAgency", "agency"); set("uType", "source_type"); set("uPubDate", "publication_date"); set("uCaseNo", "case_number"); set("uCaseName", "case_name");
+      const btn = document.getElementById("uploadBtn");
+      btn.disabled = true; btn.textContent = "Uploading & processing…";
+      const res = document.getElementById("uploadResult");
+      res.innerHTML = loadingState();
+      try {
+        const d = await api("/documents/upload", { method: "POST", body: fd });
+        res.innerHTML = `<div class="card" style="border-left:3px solid var(--ok)">
+          <div class="t">${esc(d.document.filename)}</div>
+          <div class="s">Status: ${esc(d.document.processing_status)}</div>
+          ${d.duplicate_of ? `<div class="s" style="color:var(--warn)">⚠ Duplicate document detected — original: <span class="mono">${esc(d.duplicate_of)}</span></div>` : ""}
+          <div class="s">${esc(d.message || "")}</div>
+        </div>`;
+        toast(d.duplicate_of ? "Uploaded — duplicate detected." : "Document uploaded and processed.", d.duplicate_of ? "warn" : "ok");
+        loadProcStats();
+      } catch (err) {
+        res.innerHTML = `<div class="state" style="padding:14px">${esc(err.message)}</div>`;
+      } finally { btn.disabled = false; btn.textContent = "Upload & process"; }
+    });
+    loadProcStats();
+  } else if (tab === "documents") {
+    body.innerHTML = `<div class="panel"><div class="row">
+      <select id="docStatus" style="max-width:220px"><option value="">All statuses</option><option>UPLOADED</option><option>PROCESSING</option><option>PROCESSED</option><option>REVIEW_REQUIRED</option><option>FAILED</option></select>
+      <button class="btn primary sm" id="docLoad">Apply</button>
+    </div><div id="docList" class="mt">${loadingState()}</div></div>`;
+    async function load() {
+      const box = document.getElementById("docList");
+      box.innerHTML = loadingState();
+      try {
+        const d = await apiGet("/documents" + qs({ status: document.getElementById("docStatus").value, limit: 200 }));
+        const items = d.items || [];
+        if (!items.length) { box.innerHTML = emptyState("📄", "No documents yet.", `<button class="btn primary sm" onclick="navigate('#/data/upload')">Upload a document</button>`); return; }
+        box.innerHTML = `<div class="muted small mb">${d.total} document(s)</div><div style="overflow-x:auto"><table class="list">
+          <tr><th>Filename</th><th>Type</th><th>Size</th><th>Status</th><th>Uploaded</th><th>Duplicate of</th></tr>
+          ${items.map((x) => `<tr><td>${esc(x.filename)}</td><td>${esc(x.file_type)}</td><td>${fmtSize(x.file_size)}</td><td>${statusBadge(x.processing_status)}</td><td>${fmtDT(x.upload_timestamp)}</td><td class="mono small">${x.duplicate_of_document_id ? esc(x.duplicate_of_document_id) : "—"}</td></tr>`).join("")}
+        </table></div>`;
+      } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+    }
+    document.getElementById("docLoad").addEventListener("click", load);
+    load();
+  } else if (tab === "review") {
+    body.innerHTML = `<div class="panel"><div class="row">
+      <select id="revStatus" style="max-width:200px"><option value="">All statuses</option><option selected>PENDING</option><option>EDITED</option><option>CONFIRMED</option><option>REJECTED</option></select>
+      <select id="revType" style="max-width:220px"><option value="">All types</option><option>ENTITY</option><option>LOCATION</option><option>EVENT</option><option>RELATIONSHIP</option><option>FACT</option><option>CASE_MATCH</option><option>CLAIM</option></select>
+      <button class="btn primary sm" id="revApply">Apply filters</button>
+    </div>
+    <div class="trusted-note mt">
+      <span><span class="trust-chip candidate">CANDIDATE</span> awaiting human review — not yet trusted</span>
+      <span><span class="trust-chip trusted">CONFIRMED</span> became trusted records</span>
+      <span>Confirmation/rejection uses the real candidate APIs only — no local fake state.</span>
+    </div>
+    <div id="revList" class="mt">${loadingState()}</div></div>`;
+    async function load() {
+      const box = document.getElementById("revList");
+      box.innerHTML = loadingState();
+      try {
+        const d = await apiGet("/candidates" + qs({ status: document.getElementById("revStatus").value, candidate_type: document.getElementById("revType").value, limit: 200 }));
+        const items = d.items || [];
+        if (!items.length) { box.innerHTML = emptyState("🗂", "No candidates match these filters."); return; }
+        box.innerHTML = items.map((c) => candCard(c)).join("");
+      } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+    }
+    document.getElementById("revApply").addEventListener("click", load);
+    load();
+  }
+}
+async function loadProcStats() {
+  const el = document.getElementById("procStats");
+  if (!el) return;
+  try {
+    const d = await apiGet("/documents" + qs({ limit: 200 }));
+    const items = d.items || [];
+    const count = (s) => items.filter((x) => x.processing_status === s).length;
+    el.innerHTML = `<div class="kv"><b>Documents:</b> ${d.total}</div>
+      <div class="kv"><b>Processed:</b> ${count("PROCESSED")}</div>
+      <div class="kv"><b>Review required:</b> ${count("REVIEW_REQUIRED")}</div>
+      <div class="kv"><b>Failed:</b> ${count("FAILED")}</div>
+      <div class="kv"><b>Duplicates:</b> ${items.filter((x) => x.duplicate_of_document_id).length}</div>
+      <div class="muted small mt">Processing counts come from the backend document records — they are never invented here.</div>`;
+  } catch (err) { el.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+}
+
+/* ---------- 9.14 Settings ---------- */
+async function pageSettings(container) {
+  container.innerHTML = pageHead("Settings", "Application status") + `<div class="panel"><h2>Backend status</h2><div id="settingsBody">${loadingState()}</div></div>`;
+  const el = document.getElementById("settingsBody");
+  try {
+    const h = await apiGet("/health");
+    el.innerHTML = `<div class="settings-row"><span>Service</span><span class="v">${esc(h.status || "unknown")}</span></div>
+      <div class="settings-row"><span>Database</span><span class="v">${esc(h.database || "unknown")}</span></div>
+      <div class="settings-row"><span>AI provider</span><span class="v">${esc(h.ai_provider || "none")}${h.ai_enabled ? " (enabled)" : " (deterministic mode)"}</span></div>
+      <div class="settings-row"><span>Version</span><span class="v">${esc(h.version || "—")}</span></div>
+      <div class="muted small mt">The application runs in deterministic mode without external AI. No credentials are stored or exposed in this interface.</div>`;
+  } catch (err) { el.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+}
+
+/* ---------- 9.15 Saved Searches ---------- */
+let __ssLoadList = null;
+function renderQueryResults(r) {
+  let html = "";
+  const group = (label, arr, rowHtml) => arr && arr.length ? `<div class="ss-result-group">${label}</div>` + arr.map(rowHtml).join("") : "";
+  html += group("People", r.people, (e) => `<div class="ss-row"><button class="btn ghost sm" onclick="navigate('#/entities/${e.entity_id}')">${esc(e.canonical_name)}</button><span class="ss-sub">${esc(e.status || "")}</span></div>`);
+  html += group("Organizations", r.organizations, (e) => `<div class="ss-row"><button class="btn ghost sm" onclick="navigate('#/entities/${e.entity_id}')">${esc(e.canonical_name)}</button><span class="ss-sub">${esc(e.entity_type || "")}</span></div>`);
+  html += group("Locations", r.locations, (e) => `<div class="ss-row"><button class="btn ghost sm" onclick="navigate('#/entities/${e.entity_id}')">${esc(e.canonical_name)}</button><span class="ss-sub">${esc(e.status || "")}</span></div>`);
+  html += group("Cases", r.cases, (c) => `<div class="ss-row"><button class="btn ghost sm" onclick="navigate('#/cases/${c.case_id}')">${esc(c.case_name || c.official_case_number || "(case)")}</button><span class="ss-sub">${esc(c.official_case_number || "")} ${esc(c.status || "")}</span></div>`);
+  html += group("Events", r.events, (ev) => `<div class="ss-row"><button class="btn ghost sm" onclick="navigate('#/events/${ev.event_id}')">${esc(ev.title)}</button><span class="ss-sub">${esc(ev.event_type || "")}${ev.date_precision ? " · " + esc(ev.date_precision) : ""}${ev.start_date ? " · " + esc(ev.start_date) : ""}</span></div>`);
+  html += group("Documents", r.documents, (d) => `<div class="ss-row"><span class="ss-name">${esc(d.filename)}</span><span class="ss-sub">${esc(d.processing_status || "")}</span></div>`);
+  if (!html) html = '<span class="muted small">No results for this query.</span>';
+  return html;
+}
+async function pageSavedSearches(container) {
+  container.innerHTML = pageHead("Saved Searches", "Persisted investigation queries — re-run through the one backend query engine") +
+  `<div class="grid2 mb">
+    <div class="panel"><h2>Save a search</h2>
+      <label>Name</label><input id="ssName" placeholder="e.g. Events in Pune, Jan–Jun 2026">
+      <label>Query text (q)</label><input id="ssQ" placeholder="e.g. Desai — or leave empty to filter only">
+      <div class="form-grid">
+        <div><label>Entity type</label><select id="ssEntityType"><option value="">Any</option><option>PERSON</option><option>ORGANIZATION</option><option>AGENCY</option><option>LOCATION</option></select></div>
+        <div><label>Event type</label><select id="ssEventType"><option value="">Any</option><option>OPERATION</option><option>ARREST</option><option>SEIZURE</option><option>RAID</option><option>INVESTIGATION</option><option>SEARCH</option><option>COURT_PROCEEDING</option><option>INTERCEPTION</option><option>OTHER</option></select></div>
+        <div><label>Location</label><input id="ssLocation" placeholder="e.g. Pune"></div>
+        <div><label>Case number</label><input id="ssCaseNo" placeholder="e.g. NCB/MUM/123/2026"></div>
+        <div><label>Date from</label><input id="ssFrom" type="date"></div>
+        <div><label>Date to</label><input id="ssTo" type="date"></div>
+      </div>
+      <div class="mt"><button class="btn primary sm" id="ssSave">Save search</button></div>
+    </div>
+    <div class="panel"><h2>Saved searches</h2><div id="ssList">${loadingState()}</div></div>
+  </div>
+  <div class="panel"><h2>Run results</h2><div id="ssRunOut">${emptyState("⌕", "Press RUN AGAIN on a saved search to execute it against current trusted data.")}</div></div>`;
+
+  document.getElementById("ssSave").addEventListener("click", async () => {
+    const name = document.getElementById("ssName").value.trim();
+    if (!name) { toast("Search name is required.", "warn"); return; }
+    const filters = {
+      q: document.getElementById("ssQ").value.trim() || null,
+      entity_type: document.getElementById("ssEntityType").value || null,
+      event_type: document.getElementById("ssEventType").value || null,
+      location: document.getElementById("ssLocation").value.trim() || null,
+      case_number: document.getElementById("ssCaseNo").value.trim() || null,
+      date_from: document.getElementById("ssFrom").value || null,
+      date_to: document.getElementById("ssTo").value || null,
+    };
+    Object.keys(filters).forEach((k) => { if (!filters[k]) delete filters[k]; });
+    try {
+      await apiJSON("POST", "/saved-searches", { name, filters, created_by: "web-investigator" });
+      toast("Search saved.", "ok");
+      if (__ssLoadList) __ssLoadList();
+    } catch (err) { toast(err.message, "bad"); }
+  });
+
+  async function loadList() {
+    const box = document.getElementById("ssList");
+    box.innerHTML = loadingState();
+    try {
+      const d = await apiGet("/saved-searches");
+      const items = d.items || [];
+      if (!items.length) { box.innerHTML = emptyState("⌕", "No saved searches yet. Build one on the left."); return; }
+      box.innerHTML = items.map((s) => `<div class="card mb">
+        <div class="row"><div class="t">${esc(s.name)}</div><span class="muted small">${fmtDT(s.created_at)}</span></div>
+        <div class="s mono">${esc(JSON.stringify(s.filters || {}))}</div>
+        <div class="m">
+          <button class="btn ok sm" onclick="runSavedSearch('${s.saved_search_id}')">RUN AGAIN</button>
+          <button class="btn bad sm" onclick="deleteSavedSearch('${s.saved_search_id}')">Delete</button>
+        </div>
+      </div>`).join("");
+    } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
+  }
+  __ssLoadList = loadList;
+
+  window.runSavedSearch = async (id) => {
+    const out = document.getElementById("ssRunOut");
+    out.innerHTML = loadingState();
+    try {
+      const r = await apiGet("/saved-searches/" + id + "/run");
+      out.innerHTML = renderQueryResults(r);
+    } catch (err) { out.innerHTML = errorState(err, "renderRoute()"); }
+  };
+  window.deleteSavedSearch = async (id) => {
+    try { await api("/saved-searches/" + id, { method: "DELETE" }); toast("Saved search deleted.", "warn"); if (__ssLoadList) __ssLoadList(); }
+    catch (err) { toast(err.message, "bad"); }
+  };
+  loadList();
+}
+
+/* ============================================================
+   10. ROUTE REGISTRATION + BOOT
+   ============================================================ */
+addRoute(/^\/dashboard$/, pageDashboard);
+addRoute(/^\/cases$/, pageCases);
+addRoute(/^\/cases\/(?<id>[^/]+)$/, pageCaseDetail);
+addRoute(/^\/entities$/, pageEntities);
+addRoute(/^\/entities\/(?<id>[^/]+)$/, pageEntityDetail);
+addRoute(/^\/events$/, pageEvents);
+addRoute(/^\/events\/(?<id>[^/]+)$/, pageEventDetail);
+addRoute(/^\/locations$/, pageLocations);
+addRoute(/^\/locations\/(?<id>[^/]+)$/, pageLocationDetail);
+addRoute(/^\/network$/, pageNetwork);
+addRoute(/^\/timeline$/, pageTimeline);
+addRoute(/^\/changes$/, pageChanges);
+addRoute(/^\/workspaces$/, pageWorkspaces);
+addRoute(/^\/workspaces\/(?<id>[^/]+)$/, pageWorkspaceDetail);
+addRoute(/^\/saved-searches$/, pageSavedSearches);
+addRoute(/^\/sources$/, pageSources);
+addRoute(/^\/sources\/(?<id>[^/]+)$/, pageSourceDetail);
+addRoute(/^\/data$/, pageData);
+addRoute(/^\/data\/(?<tab>\w+)$/, pageData);
+addRoute(/^\/settings$/, pageSettings);
+
+window.navigate = navigate;
+
+function boot() {
+  buildSidebar();
+  setupSearch();
+  document.getElementById("nodeDrawerClose").addEventListener("click", closeDrawer);
+  document.getElementById("nodeDrawerBackdrop").addEventListener("click", closeDrawer);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.getElementById("nodeDrawer").classList.contains("open")) closeDrawer();
+  });
+  window.addEventListener("hashchange", renderRoute);
+  refreshWorkspacePill();
+  renderRoute();
+}
+
+document.addEventListener("DOMContentLoaded", boot);
+</script>
+</body>
+</html>

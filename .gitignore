@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+.env.local
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Data artifacts (uploaded/extracted documents are generated at runtime)
+data/documents/original/*
+data/documents/extracted/*
+!data/documents/original/.gitkeep
+!data/documents/extracted/.gitkeep
+data/demo/generated/*
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend
+node_modules/
+dist/
+build/
+.freebuff/

@@ -1,0 +1,18 @@
+# NARCOSCOPE backend dependencies
+fastapi>=0.110,<1.0
+uvicorn[standard]>=0.29
+sqlalchemy>=2.0.25,<3.0
+pydantic>=2.6,<3.0
+pydantic-settings>=2.2
+python-multipart>=0.0.9
+
+# Document processing
+PyMuPDF>=1.24.0
+python-docx>=1.1.0
+
+# Graph (Prompt 2 — trusted master knowledge graph)
+networkx>=3.0,<4.0
+
+# Testing
+pytest>=8.0
+httpx>=0.27

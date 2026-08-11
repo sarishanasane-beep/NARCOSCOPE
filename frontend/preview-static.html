@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NARCOSCOPE — Phase 1 review interface (static preview)</title>
+<style>
+  :root { --bg:#0f1220; --panel:#171b2e; --line:#2a3050; --text:#dbe2f4; --muted:#8a93b8;
+          --accent:#4f7cff; --ok:#35c06b; --warn:#e0a63c; --bad:#e0534f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background:var(--bg); color:var(--text); }
+  header { padding:16px 24px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; letter-spacing:2px; }
+  header .tag { font-size:12px; color:var(--muted); }
+  .notice { width:100%; margin-top:10px; padding:8px 12px; border-radius:8px; font-size:12px;
+            background:#2a2410; color:var(--warn); border:1px solid #4a3d17; }
+  main { padding:24px; display:grid; grid-template-columns: 360px 1fr; gap:24px; align-items:start; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .panel h2 { font-size:14px; margin:0 0 12px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  input, select { width:100%; padding:8px; border-radius:6px; border:1px solid var(--line);
+                  background:#10142a; color:var(--text); }
+  button { padding:8px 14px; border-radius:6px; border:1px solid var(--line); cursor:pointer;
+           background:#232a4d; color:var(--text); font-weight:600; }
+  button:hover { filter:brightness(1.15); }
+  button.primary { background:var(--accent); border-color:var(--accent); }
+  button.ok { background:var(--ok); border-color:var(--ok); color:#04240f; }
+  button.bad { background:var(--bad); border-color:var(--bad); color:#2b0505; }
+  .row { display:flex; gap:8px; align-items:center; margin-top:12px; }
+  .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; }
+  .badge.PENDING { background:#26355c; color:#9db8ff; }
+  .badge.CONFIRMED { background:#12351f; color:#35c06b; }
+  .badge.REJECTED { background:#3a1515; color:#e0534f; }
+  .badge.EDITED { background:#3a2f12; color:#e0a63c; }
+  .candidate { border:1px solid var(--line); border-radius:8px; padding:12px; margin-bottom:12px; }
+  .candidate .head { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .candidate .type { font-size:11px; color:var(--muted); text-transform:uppercase; }
+  .candidate .name { font-weight:700; font-size:15px; }
+  .candidate .meta { font-size:12px; color:var(--muted); margin-top:4px; }
+  .candidate .evidence { font-size:12px; font-style:italic; color:#aab3d4;
+                          border-left:3px solid var(--line); padding:6px 10px; margin-top:8px;
+                          background:#131735; border-radius:0 6px 6px 0; }
+  .candidate .actions { display:flex; gap:8px; margin-top:10px; }
+  .msg { padding:10px 12px; border-radius:8px; margin-top:12px; font-size:13px; display:none; }
+  .msg.show { display:block; }
+  .msg.ok { background:#12351f; color:#35c06b; }
+  .msg.bad { background:#3a1515; color:#e0534f; }
+  pre.json { font-size:11px; color:#9aa3c6; overflow:auto; max-height:180px; }
+  details { margin-top:8px; }
+  summary { cursor:pointer; color:var(--muted); font-size:12px; }
+  .kpi { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:16px; }
+  .kpi div { background:#131735; border:1px solid var(--line); border-radius:8px; padding:10px; text-align:center; }
+  .kpi .num { font-size:20px; font-weight:700; color:var(--accent); }
+  .kpi .lab { font-size:11px; color:var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>NARCOSCOPE</h1>
+  <span class="tag">Phase 1 — review interface (static preview)</span>
+  <div class="notice">
+    STATIC PREVIEW — the backend is not running inside this preview, so data shown here is a
+    snapshot of the synthetic demo dataset (DEMO DATA) and review actions update local state only.
+    To use the real API, run the backend: <code>python scripts/run.py</code> from <code>backend/</code>
+    and open <code>http://127.0.0.1:8000/</code>.
+  </div>
+</header>
+<main>
+  <section>
+    <div class="panel">
+      <h2>Document upload (static)</h2>
+      <label>File (PDF, DOCX, TXT)</label>
+      <input type="file" id="fileInput" accept=".pdf,.docx,.txt" disabled>
+      <label>Publisher (optional)</label>
+      <input placeholder="e.g. NARCOSCOPE Demo Unit" disabled>
+      <label>Source type</label>
+      <select disabled>
+        <option>SECONDARY_SOURCE</option>
+        <option>OFFICIAL_POLICE</option>
+        <option>COURT_PUBLIC_RECORD</option>
+      </select>
+      <div class="row">
+        <button class="primary" onclick="flash('Upload requires the backend API. See the notice above.', 'bad')">Upload &amp; process</button>
+      </div>
+      <div class="msg" id="flashMsg"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>Trusted data (demo snapshot)</h2>
+      <div class="kpi">
+        <div><div class="num" id="kpiPeople">0</div><div class="lab">People</div></div>
+        <div><div class="num" id="kpiCases">0</div><div class="lab">Cases</div></div>
+        <div><div class="num" id="kpiRels">0</div><div class="lab">Relationships</div></div>
+        <div><div class="num" id="kpiPending">0</div><div class="lab">Pending</div></div>
+      </div>
+      <label>Candidate status</label>
+      <select id="statusFilter" onchange="render()">
+        <option value="">all</option>
+        <option selected>PENDING</option>
+        <option>CONFIRMED</option>
+        <option>REJECTED</option>
+        <option>EDITED</option>
+      </select>
+      <label>Candidate type</label>
+      <select id="typeFilter" onchange="render()">
+        <option value="">all</option>
+        <option>ENTITY</option>
+        <option>LOCATION</option>
+        <option>EVENT</option>
+        <option>RELATIONSHIP</option>
+        <option>FACT</option>
+        <option>CASE_MATCH</option>
+      </select>
+    </div>
+  </section>
+
+  <section>
+    <div class="panel">
+      <h2>Candidates for review</h2>
+      <div id="candidateList"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+// ---------------------------------------------------------------------------
+// Demo snapshot (DEMO DATA) — mirrors what the backend produces for the
+// synthetic dataset. Review actions mutate local state only.
+// ---------------------------------------------------------------------------
+const DEMO_CANDIDATES = [
+  {
+    id: "c1", candidate_type: "ENTITY", status: "PENDING", confidence: 0.9,
+    reason: "person verb context",
+    proposed_data: { name: "Arjun Mehta", entity_type: "PERSON", aliases: [] },
+    evidence: { exact_text: "Arjun Mehta was arrested during Operation Bluewater.", page_number: 1 },
+  },
+  {
+    id: "c2", candidate_type: "ENTITY", status: "PENDING", confidence: 0.85,
+    reason: "operation name pattern",
+    proposed_data: { name: "Operation Bluewater", entity_type: "OTHER", aliases: [] },
+    evidence: { exact_text: "Operation Bluewater: Mumbai raid on 15 June 2026.", page_number: 1 },
+  },
+  {
+    id: "c3", candidate_type: "LOCATION", status: "PENDING", confidence: 0.9,
+    reason: "dictionary location match",
+    proposed_data: { name: "Mumbai", entity_type: "LOCATION", aliases: [], parent_location: "Maharashtra" },
+    evidence: { exact_text: "Operation Bluewater took place in Mumbai.", page_number: 1 },
+  },
+  {
+    id: "c4", candidate_type: "EVENT", status: "PENDING", confidence: 0.85,
+    reason: "arrest pattern during operation",
+    proposed_data: { event_type: "ARREST", title: "Arrest of Arjun Mehta during Operation Bluewater",
+                     start_date: "2026-06-15", date_precision: "DAY", location_name: "Mumbai" },
+    evidence: { exact_text: "Arjun Mehta was arrested during Operation Bluewater on 15 June 2026.", page_number: 1 },
+  },
+  {
+    id: "c5", candidate_type: "EVENT", status: "PENDING", confidence: 0.7,
+    reason: "event keyword: seizure (during Operation Silverline)",
+    proposed_data: { event_type: "SEIZURE", title: "Seizure during Operation Silverline",
+                     start_date: "2026-06-01", date_precision: "MONTH", location_name: "Pune" },
+    evidence: { exact_text: "A seizure was carried out during Operation Silverline in Pune in June 2026.", page_number: 1 },
+  },
+  {
+    id: "c6", candidate_type: "RELATIONSHIP", status: "PENDING", confidence: 0.7,
+    reason: "relationship pattern: ARRESTED_IN",
+    proposed_data: { source_name: "Arjun Mehta", source_type: "PERSON", relationship_type: "ARRESTED_IN",
+                     target_name: "Operation Bluewater", target_type: "OTHER", classification: "DIRECT" },
+    evidence: { exact_text: "Arjun Mehta was arrested during Operation Bluewater.", page_number: 1 },
+  },
+  {
+    id: "c7", candidate_type: "FACT", status: "PENDING", confidence: 0.7,
+    reason: "fact pattern: QUESTIONED_IN",
+    proposed_data: { subject_name: "Suresh Patil", subject_type: "PERSON", predicate: "QUESTIONED_IN",
+                     object_name: "Case CASE-001", object_type: "CASE", case_ref: "Case CASE-001" },
+    evidence: { exact_text: "Inspector Suresh Patil was questioned in connection with Case CASE-001.", page_number: 1 },
+  },
+  {
+    id: "c8", candidate_type: "CASE_MATCH", status: "PENDING", confidence: 0.7,
+    reason: "new case reference found in document",
+    proposed_data: { case_number: "NCB/MUM/123/2026", case_name: "CASE-001", action: "create",
+                     jurisdiction: "Maharashtra" },
+    evidence: { exact_text: "The case has been registered as Case CASE-001 with number NCB/MUM/123/2026.", page_number: 1 },
+  },
+  {
+    id: "c9", candidate_type: "RELATIONSHIP", status: "PENDING", confidence: 0.5,
+    reason: "Derived from confirmed facts: Arjun Mehta ARRESTED_IN Operation Bluewater and Operation Bluewater OCCURRED_IN Mumbai. Requires human review.",
+    proposed_data: { source_name: "Arjun Mehta", source_type: "PERSON", relationship_type: "LOCATED_IN",
+                     target_name: "Mumbai", target_type: "LOCATION", classification: "DERIVED" },
+    evidence: { exact_text: "Arjun Mehta was arrested during Operation Bluewater.", page_number: 1 },
+  },
+  {
+    id: "c10", candidate_type: "ENTITY", status: "CONFIRMED", confidence: 0.8,
+    reason: "person title prefix",
+    proposed_data: { name: "Suresh Patil", entity_type: "PERSON", aliases: ["Inspector Suresh Patil"] },
+    evidence: { exact_text: "Inspector Suresh Patil led Operation Bluewater.", page_number: 1 },
+  },
+  {
+    id: "c11", candidate_type: "ENTITY", status: "REJECTED", confidence: 0.5,
+    reason: "capitalized name sequence (low confidence)",
+    proposed_data: { name: "Revenue Intelligence", entity_type: "PERSON", aliases: [] },
+    evidence: { exact_text: "The Directorate of Revenue Intelligence also participated in Operation Bluewater.", page_number: 1 },
+  },
+  {
+    id: "c12", candidate_type: "CLAIM", status: "PENDING", confidence: 0.7,
+    reason: "allegation preserved — an allegation remains an allegation",
+    proposed_data: { claim_status: "ALLEGED", subject_name: "Vikram Jadhav" },
+    evidence: { exact_text: "Authorities alleged that Vikram Jadhav supplied materials for the operation's target consignment.", page_number: 1 },
+  },
+];
+
+const KPIS = { people: 21, cases: 5, relationships: 38, pending: 4 };
+
+function describe(c) {
+  const d = c.proposed_data || {};
+  switch (c.candidate_type) {
+    case "ENTITY":
+    case "LOCATION":
+      return { name: d.name, meta: "Type: " + (d.entity_type || c.candidate_type) +
+        (d.parent_location ? " · Parent: " + d.parent_location : "") +
+        (d.aliases && d.aliases.length ? " · Aliases: " + d.aliases.join(", ") : "") };
+    case "EVENT":
+      return { name: d.title, meta: "Type: " + d.event_type +
+        (d.start_date ? " · Date: " + d.start_date + " (" + d.date_precision + ")" : " · Date: unknown") +
+        (d.location_name ? " · " + d.location_name : "") };
+    case "RELATIONSHIP":
+      return { name: d.source_name + " —" + d.relationship_type + "→ " + d.target_name,
+               meta: "Classification: " + (d.classification || "DIRECT") };
+    case "FACT":
+      return { name: d.subject_name + " —" + d.predicate + "→ " + (d.object_name || "(case)"),
+               meta: "Object type: " + (d.object_type || "CASE") };
+    case "CASE_MATCH":
+      return { name: d.case_name || d.case_number || "(case)",
+               meta: "Action: " + d.action + (d.case_number ? " · Number: " + d.case_number : "") +
+                     (d.jurisdiction ? " · Jurisdiction: " + d.jurisdiction : "") };
+    case "CLAIM":
+      return { name: "Claim (" + (d.claim_status || "UNKNOWN") + ")", meta: "Subject: " + (d.subject_name || "—") };
+    default:
+      return { name: c.candidate_type, meta: JSON.stringify(d) };
+  }
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[ch]));
+}
+
+function flash(text, kind) {
+  const el = document.getElementById("flashMsg");
+  el.textContent = text;
+  el.className = "msg show " + kind;
+  setTimeout(() => el.classList.remove("show"), 5000);
+}
+
+function review(id, action) {
+  const c = DEMO_CANDIDATES.find((x) => x.id === id);
+  if (!c) return;
+  if (c.status !== "PENDING" && c.status !== "EDITED") { flash("Candidate already reviewed.", "bad"); return; }
+  c.status = action === "confirm" ? "CONFIRMED" : "REJECTED";
+  flash(action === "confirm" ? "Candidate confirmed (local state)." : "Candidate rejected (local state).", "ok");
+  render();
+}
+
+function toggleRaw(id) {
+  const el = document.getElementById("raw-" + id);
+  if (el) el.open = !el.open;
+}
+
+function candidateHTML(c) {
+  const { name, meta } = describe(c);
+  return `<div class="candidate">
+    <div class="head">
+      <span class="badge ${c.status}">${c.status}</span>
+      <span class="type">${c.candidate_type}</span>
+      <span class="name">${escapeHtml(name)}</span>
+    </div>
+    <div class="meta">${escapeHtml(meta)} · Extraction confidence: ${c.confidence ?? "—"} · reason: ${escapeHtml(c.reason)}</div>
+    ${(c.evidence_refs && c.evidence_refs.length ? c.evidence_refs : (c.evidence ? [c.evidence] : [])).map((ev, i) => `<div class="evidence">“${escapeHtml(ev.exact_text)}”</div>`).join("")}
+    <div class="actions">
+      ${c.status === "PENDING" || c.status === "EDITED" ? `
+        <button class="ok" onclick="review('${c.id}', 'confirm')">Confirm</button>
+        <button class="bad" onclick="review('${c.id}', 'reject')">Reject</button>` : ""}
+      <button onclick="toggleRaw('${c.id}')">Details</button>
+    </div>
+    <details id="raw-${c.id}"><summary>Details</summary>
+      <p class="confidence-note">Confidence represents how strongly the system supports this extraction or match based on deterministic rules and available evidence. It is not a probability of guilt.</p>
+      <pre class="json">${escapeHtml(JSON.stringify(c.proposed_data, null, 2))}</pre></details>
+  </div>`;
+}
+
+function render() {
+  const status = document.getElementById("statusFilter").value;
+  const type = document.getElementById("typeFilter").value;
+  const items = DEMO_CANDIDATES.filter(
+    (c) => (!status || c.status === status) && (!type || c.candidate_type === type)
+  );
+  const el = document.getElementById("candidateList");
+  if (!items.length) {
+    el.innerHTML = '<p style="color:var(--muted)">No candidates match the current filters.</p>';
+  } else {
+    el.innerHTML = `<p style="color:var(--muted)">${items.length} candidate(s) — demo snapshot (DEMO DATA)</p>` +
+      items.map(candidateHTML).join("");
+  }
+  document.getElementById("kpiPeople").textContent = KPIS.people;
+  document.getElementById("kpiCases").textContent = KPIS.cases;
+  document.getElementById("kpiRels").textContent = KPIS.relationships;
+  document.getElementById("kpiPending").textContent =
+    DEMO_CANDIDATES.filter((c) => c.status === "PENDING").length;
+}
+
+render();
+</script>
+</body>
+</html>
