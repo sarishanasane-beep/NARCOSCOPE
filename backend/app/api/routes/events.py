@@ -14,11 +14,17 @@ router = APIRouter(prefix="/events", tags=["events"])
 
 @router.get("", response_model=EventList)
 def list_events(
-    event_type: str | None = None, limit: int = 200, offset: int = 0, db: Session = Depends(get_db)
+    event_type: str | None = None,
+    case_id: str | None = None,
+    limit: int = 200,
+    offset: int = 0,
+    db: Session = Depends(get_db),
 ) -> EventList:
     query = db.query(Event).order_by(Event.start_date.desc().nullslast())
     if event_type:
         query = query.filter(Event.event_type == event_type)
+    if case_id:
+        query = query.filter(Event.case_id == case_id)
     total = query.count()
     items = query.offset(offset).limit(limit).all()
     return EventList(items=[EventOut.model_validate(e) for e in items], total=total)

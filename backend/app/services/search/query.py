@@ -112,11 +112,15 @@ def _entity_out(entity: Entity) -> dict[str, Any]:
         aliases = list(entity.person.aliases or [])
     elif entity.organization is not None:
         aliases = list(entity.organization.aliases or [])
+    meta = entity.structured_metadata or {}
     return {
         "entity_id": entity.entity_id,
         "entity_type": entity.entity_type,
         "canonical_name": entity.canonical_name,
         "status": entity.status,
+        "investigative_status": meta.get("investigative_status"),
+        "mention_context": meta.get("mention_context"),
+        "role": meta.get("role"),
         "aliases": aliases,
     }
 

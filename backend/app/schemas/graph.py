@@ -19,6 +19,13 @@ class GraphNodeOut(BaseModel):
     end_date: str | None = None
     case_number: str | None = None
     jurisdiction: str | None = None
+    # Structured-source semantics (entities only) preserved at
+    # confirmation: CONTEXTUAL / MENTIONED_ONLY / ACCUSED / ...
+    investigative_status: str | None = None
+    mention_context: str | None = None
+    role: str | None = None
+    # Source document id (entities/events) for source-document details.
+    document_id: str | None = None
 
 
 class GraphEdgeOut(BaseModel):
@@ -54,6 +61,9 @@ class GraphStats(BaseModel):
     total_edges: int
     nodes_by_type: dict[str, int]
     edges_by_type: dict[str, int]
+    # Analysis scope: "case" when case_id is provided, otherwise "global".
+    scope: str | None = None
+    case_id: str | None = None
 
 
 class GraphProvenanceOut(BaseModel):
@@ -70,3 +80,8 @@ class GraphProvenanceOut(BaseModel):
     evidence: dict[str, Any] | None = None
     document: dict[str, Any] | None = None
     source: dict[str, Any] | None = None
+    # Endpoint names/types of the confirmed relationship (or fact subject).
+    source_name: str | None = None
+    source_type: str | None = None
+    target_name: str | None = None
+    target_type: str | None = None

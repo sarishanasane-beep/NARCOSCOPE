@@ -31,7 +31,11 @@ from app.models.candidate import (
     Candidate,
 )
 from app.models.case import Case
+from app.models.document import Document
 from app.models.entity import (
+    ENTITY_STATUS_ACTIVE,
+    ENTITY_STATUS_MERGED,
+    ENTITY_TYPE_CASE,
     ENTITY_TYPE_LOCATION,
     ENTITY_TYPE_ORGANIZATION,
     ENTITY_TYPE_PERSON,
@@ -43,9 +47,10 @@ from app.models.fact import FACT_STATUS_CONFIRMED, Fact
 from app.models.relationship import REL_STATUS_CONFIRMED, Relationship
 from app.services.audit.service import log_action
 from app.services.cases.matching import match_case
+from app.services.entities.duplicates import reconcile_case_entity
 from app.services.entities.resolution import create_entity, find_entity_by_name
 from app.utils.errors import CandidateStateError, ValidationError
-from app.utils.text import normalize_case_number
+from app.utils.text import normalize_case_number, normalize_name
 from app.utils.logging import log_event
 from app.utils.time import utcnow
 
@@ -139,6 +144,26 @@ def _resolve_entity(
         if evidence:
             notes += f" Evidence: {evidence.exact_text[:300]}"
 
+    # Structured-source semantics survive confirmation in Entity.metadata
+    # so the Network Explorer can distinguish a contextual/mentioned-only
+    # person from an investigative subject — never inferred, only the
+    # explicit fields plus the neutral MENTIONED_ONLY default for a person
+    # with no documented investigative status.
+    structured_meta: dict = {}
+    for key in (
+        "structured_kind", "role", "status", "mention_context", "location_type",
+        "description", "quantity", "value", "registration",
+    ):
+        value = proposed.get(key)
+        if value:
+            structured_meta[key] = value
+    if entity_type == ENTITY_TYPE_PERSON:
+        structured_meta["investigative_status"] = _derive_investigative_status(proposed)
+    if candidate.evidence_id:
+        evidence = db.get(Evidence, candidate.evidence_id)
+        if evidence and evidence.exact_text:
+            structured_meta["evidence_snippet"] = evidence.exact_text[:300]
+
     entity = create_entity(
         db,
         entity_type=entity_type,
@@ -147,6 +172,9 @@ def _resolve_entity(
         notes=notes,
         parent_location=parent_location,
         organization_type=organization_type,
+        location_type=proposed.get("location_type") or "OTHER",
+        structured_metadata=structured_meta or None,
+        document_id=candidate.source_document_id,
         user=user,
     )
     return entity.entity_id, "entity"
@@ -160,25 +188,60 @@ def _resolve_event(
     start_date = _parse_date(proposed.get("start_date"))
     end_date = _parse_date(proposed.get("end_date"))
     precision = proposed.get("date_precision") or "UNKNOWN"
+    # Exact TIME text from the source — kept as written, "Not provided"
+    # when absent. Never derived from publication/upload timestamps.
+    event_time = (proposed.get("time") or proposed.get("event_time") or "").strip() or None
 
     location_id = None
     location_name = proposed.get("location_name")
     if location_name:
         location = find_entity_by_name(db, location_name, ENTITY_TYPE_LOCATION)
+        if location is None:
+            # Exact-name fallback: a location entity whose canonical name is
+            # contained in the source string ("Mumbai region" -> Mumbai).
+            # Deterministic; the longest contained name wins.
+            location = _find_contained_location(db, location_name)
         if location is not None and location.location is not None:
             location_id = location.location.location_id
 
     case_id = _resolve_case_ref(db, proposed.get("case_ref"))
+    if case_id is None and candidate.source_document_id:
+        # One structured document = one case: events inherit the case of
+        # their source document so /timeline/case and the case graph agree.
+        document = db.get(Document, candidate.source_document_id)
+        if document is not None:
+            case_id = document.case_id
+
+    event_meta: dict = {}
+    for key in ("status", "duration", "organization", "drug", "vehicle", "person"):
+        value = proposed.get(key)
+        if value:
+            event_meta[key] = value
+    if proposed.get("accused_identity"):
+        event_meta["accused_identity"] = proposed["accused_identity"]
+    if proposed.get("quantity"):
+        event_meta["quantity"] = proposed["quantity"]
+    if proposed.get("value"):
+        event_meta["value"] = proposed["value"]
+    if candidate.evidence_id:
+        evidence = db.get(Evidence, candidate.evidence_id)
+        if evidence and evidence.exact_text:
+            event_meta["evidence_snippet"] = evidence.exact_text[:300]
 
     event = Event(
         event_id=str(uuid.uuid4()),
         event_type=event_type,
         title=title,
+        description=proposed.get("description"),
         start_date=start_date,
         end_date=end_date,
         date_precision=precision,
+        event_time=event_time,
         location_id=location_id,
         case_id=case_id,
+        document_id=candidate.source_document_id,
+        evidence_id=candidate.evidence_id,
+        structured_metadata=event_meta or None,
     )
     db.add(event)
     db.flush()
@@ -200,8 +263,20 @@ def _resolve_relationship(
     relationship_type = _require(proposed, "relationship_type")
     classification = proposed.get("classification") or "DIRECT"
 
-    source = _resolve_endpoint_entity(db, source_name, source_type, user)
-    target = _resolve_endpoint_entity(db, target_name, target_type, user)
+    # A CASE-typed endpoint represents a declared CASE (e.g. the operation
+    # node for "Operation WHITE STRIKE"). Resolve the canonical Case FIRST
+    # so a CASE-typed endpoint reuses/reconciles into it instead of
+    # creating an independent CASE record (ingestion-time prevention). The
+    # entity endpoint still exists (the graph requires entity endpoints)
+    # but is reconciled to the Case and never appears on its own.
+    case_id = None
+    if source_type == ENTITY_TYPE_CASE:
+        case_id = _find_case_id_by_name(db, source_name)
+    if target_type == ENTITY_TYPE_CASE:
+        case_id = case_id or _find_case_id_by_name(db, target_name)
+
+    source = _resolve_endpoint_entity(db, source_name, source_type, user, linked_case_id=case_id)
+    target = _resolve_endpoint_entity(db, target_name, target_type, user, linked_case_id=case_id)
 
     event_id = None
     if target_type != ENTITY_TYPE_LOCATION:
@@ -214,6 +289,7 @@ def _resolve_relationship(
         source_entity_id=source.entity_id,
         relationship_type=relationship_type,
         target_entity_id=target.entity_id,
+        case_id=case_id,
         event_id=event_id,
         evidence_id=candidate.evidence_id,
         classification=classification,
@@ -286,42 +362,54 @@ def _resolve_case(
     case_number = proposed.get("case_number")
     case_name = proposed.get("case_name")
     jurisdiction = proposed.get("jurisdiction")
+    case_id: str | None = None
 
     if action == "link" and proposed.get("existing_case_id"):
         existing = db.get(Case, proposed["existing_case_id"])
         if existing is not None:
+            case_id = existing.case_id
             log_action(
                 db, action="CONFIRM", object_type="case_match", object_id=existing.case_id,
                 new_value={"case_id": existing.case_id, "decision": "same case"},
                 reason="reviewer confirmed the case match", user=user,
             )
-            return existing.case_id, "case"
-
-    existing_id, _ = match_case(db, case_number=case_number, case_name=case_name)
-    if existing_id:
-        existing = db.get(Case, existing_id)
-        log_action(
-            db, action="CONFIRM", object_type="case_match", object_id=existing.case_id,
-            new_value={"case_id": existing.case_id, "decision": "linked to existing case"},
-            reason="reviewer confirmed the case match", user=user,
+    if case_id is None:
+        existing_id, _ = match_case(db, case_number=case_number, case_name=case_name)
+        if existing_id:
+            existing = db.get(Case, existing_id)
+            case_id = existing.case_id
+            log_action(
+                db, action="CONFIRM", object_type="case_match", object_id=existing.case_id,
+                new_value={"case_id": existing.case_id, "decision": "linked to existing case"},
+                reason="reviewer confirmed the case match", user=user,
+            )
+    if case_id is None:
+        case = Case(
+            case_id=str(uuid.uuid4()),
+            official_case_number=case_number,
+            case_name=case_name,
+            jurisdiction=jurisdiction,
+            category=proposed.get("category"),
+            status=proposed.get("status") or "UNKNOWN",
+            description=proposed.get("description"),
         )
-        return existing.case_id, "case"
+        db.add(case)
+        db.flush()
+        case_id = case.case_id
+        log_action(
+            db, action="CREATE", object_type="case", object_id=case.case_id,
+            new_value={"official_case_number": case_number, "case_name": case_name},
+            reason="candidate confirmation", user=user,
+        )
 
-    case = Case(
-        case_id=str(uuid.uuid4()),
-        official_case_number=case_number,
-        case_name=case_name,
-        jurisdiction=jurisdiction,
-        status="UNKNOWN",
-    )
-    db.add(case)
-    db.flush()
-    log_action(
-        db, action="CREATE", object_type="case", object_id=case.case_id,
-        new_value={"official_case_number": case_number, "case_name": case_name},
-        reason="candidate confirmation", user=user,
-    )
-    return case.case_id, "case"
+    # One structured TXT document = one case: the source document is linked
+    # to the case so events and isolated entities from the same document
+    # can be scoped to the case without fabricating membership edges.
+    if candidate.source_document_id:
+        document = db.get(Document, candidate.source_document_id)
+        if document is not None and document.case_id is None:
+            document.case_id = case_id
+    return case_id, "case"
 
 
 # ---------------------------------------------------------------------------
@@ -329,15 +417,70 @@ def _resolve_case(
 # ---------------------------------------------------------------------------
 
 
+# Investigative-status vocabulary. These are the ONLY values NARCOSCOPE
+# assigns to a person's investigative status; the value always comes from
+# the explicit structured fields or the neutral MENTIONED_ONLY default.
+# ARRESTED/APPREHENDED are legal-process facts and are NOT investigative
+# statuses — an accused status comes only from an explicit ROLE/STATUS.
+_INVESTIGATIVE_STATUSES = {
+    "INVOLVED",
+    "SUSPECT",
+    "ACCUSED",
+    "WITNESS",
+    "VICTIM",
+    "PERSON_OF_INTEREST",
+    "MENTIONED_ONLY",
+    "CONTEXTUAL",
+    "UNKNOWN",
+}
+
+
+def _derive_investigative_status(proposed: dict) -> str:
+    """Deterministic, non-inferring investigative status for a PERSON.
+
+    Priority: explicit CONTEXTUAL mention context, then an explicit status
+    or role that is part of the vocabulary, then the neutral
+    MENTIONED_ONLY default. A person mentioned in a source with no
+    documented investigative status is MENTIONED_ONLY — this is the
+    absence of an allegation, never an allegation itself.
+    """
+    explicit = (proposed.get("investigative_status") or "").strip().upper()
+    status = (proposed.get("status") or "").strip().upper()
+    role = (proposed.get("role") or "").strip().upper()
+    context = (proposed.get("mention_context") or "").strip().upper()
+    # An explicitly declared INVESTIGATIVE_STATUS field (v2 contract) is
+    # authoritative when it is part of the vocabulary.
+    if explicit in _INVESTIGATIVE_STATUSES:
+        return explicit
+    if "CONTEXTUAL" in (status, role, context):
+        return "CONTEXTUAL"
+    if status in _INVESTIGATIVE_STATUSES:
+        return status
+    if role in _INVESTIGATIVE_STATUSES:
+        return role
+    return "MENTIONED_ONLY"
+
+
 def _resolve_endpoint_entity(
-    db: Session, name: str, entity_type: str, user: str | None
+    db: Session,
+    name: str,
+    entity_type: str,
+    user: str | None,
+    linked_case_id: str | None = None,
 ) -> Entity:
     """Find a confirmed entity by name; create it if missing.
 
     Endpoint entities come from the same document's candidates; creating
     them during relationship confirmation is safe because the reviewer
     explicitly accepted the relationship.
+
+    For CASE-typed endpoints with a resolved canonical Case, the endpoint
+    is the case's reconciled entity (reused if present, created and
+    immediately reconciled otherwise) — confirming more relationships
+    never fabricates independent CASE records.
     """
+    if entity_type == ENTITY_TYPE_CASE and linked_case_id:
+        return _resolve_case_endpoint(db, name, linked_case_id, user)
     entity = find_entity_by_name(db, name, entity_type)
     if entity is not None:
         return entity
@@ -348,6 +491,73 @@ def _resolve_endpoint_entity(
         notes="Created during relationship/fact confirmation.",
         user=user,
     )
+
+
+def _resolve_case_endpoint(
+    db: Session, name: str, case_id: str, user: str | None
+) -> Entity:
+    """CASE-typed relationship-endpoint entity for a canonical Case.
+
+    Reuses an existing endpoint (ACTIVE, or already reconciled into this
+    case); otherwise creates one and immediately reconciles it into the
+    case so it never appears as an independent logical record. The graph
+    service routes edges from reconciled endpoints to the case node.
+    """
+    normalized = normalize_name(name)
+    for entity in db.query(Entity).filter(Entity.entity_type == ENTITY_TYPE_CASE).all():
+        if normalize_name(entity.canonical_name) != normalized:
+            continue
+        if entity.status == ENTITY_STATUS_ACTIVE:
+            return entity
+        if entity.status == ENTITY_STATUS_MERGED and entity.merged_into_case_id == case_id:
+            return entity
+    entity = create_entity(
+        db,
+        entity_type=ENTITY_TYPE_CASE,
+        canonical_name=name,
+        notes="CASE endpoint created during relationship confirmation.",
+        user=user,
+    )
+    reconcile_case_entity(
+        db, entity.entity_id, case_id,
+        user=user,
+        note="CASE endpoint reconciled into its canonical Case at confirmation.",
+    )
+    return entity
+
+
+def _find_contained_location(db: Session, location_name: str) -> Entity | None:
+    """A location entity whose canonical name is contained in the string.
+
+    Exact matches are handled before this helper. Longest contained name
+    wins ("KWC Warehousing Complex, Sector KWC, Kalamboli" ->
+    "KWC Warehousing Complex", not "Kalamboli"). Only ACTIVE locations.
+    """
+    needle = location_name.lower()
+    best: tuple[Entity, int] | None = None
+    for entity in (
+        db.query(Entity)
+        .filter(Entity.entity_type == ENTITY_TYPE_LOCATION, Entity.status == ENTITY_STATUS_ACTIVE)
+        .all()
+    ):
+        name = (entity.canonical_name or "").lower()
+        if name and name in needle and len(name) > 1:
+            if best is None or len(name) > best[1]:
+                best = (entity, len(name))
+    return best[0] if best is not None else None
+
+
+def _find_case_id_by_name(db: Session, name: str) -> str | None:
+    """Exact normalized-name lookup for a confirmed Case record."""
+    bare = _CASE_LABEL_PREFIX.sub("", name).strip()
+    if not bare:
+        return None
+    normalized = normalize_case_number(bare)
+    for case in db.query(Case).all():
+        candidate = case.case_name or case.official_case_number or ""
+        if candidate and normalize_case_number(candidate) == normalized:
+            return case.case_id
+    return None
 
 
 # "Case CASE-001" / "Case No. CASE-001" — a leading case label is not

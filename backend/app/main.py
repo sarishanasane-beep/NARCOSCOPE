@@ -33,6 +33,7 @@ from app.api.routes import (  # noqa: E402
     changes,
     cross_case,
     documents,
+    duplicates,
     entities,
     events,
     evidence,
@@ -104,6 +105,7 @@ app.include_router(documents.router)
 app.include_router(sources.router)
 app.include_router(evidence.router)
 app.include_router(cases.router)
+app.include_router(duplicates.router)
 app.include_router(graph.router)
 app.include_router(entities.router)
 app.include_router(events.router)

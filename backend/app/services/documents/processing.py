@@ -29,6 +29,8 @@ from app.services.documents.cleaning import build_clean_document
 from app.services.documents.extractors import get_extractor
 from app.services.documents.storage import save_extracted_text
 from app.services.extraction.engine import run_extraction
+from app.services.extraction.structured import detect_structured, parse_structured
+from app.services.sources.service import create_source
 from app.utils.errors import ExtractionError
 from app.utils.logging import log_event
 from app.utils.time import utcnow
@@ -69,7 +71,22 @@ def process_document(db: Session, document: Document) -> ProcessingOutcome:
             existing_id, kind = match_case(db, case_number=number, case_name=name)
             return existing_id, kind
 
-        result = run_extraction(full_text, case_matcher=_case_matcher)
+        # Structured NARCOSCOPE TXT documents are parsed by the labelled
+        # section parser (v1 ``SECTION:`` blocks and the v2
+        # ``NARCOSCOPE_STRUCTURED_INVESTIGATION_DOCUMENT`` contract — fields
+        # are explicit semantic instructions, never re-classified by generic
+        # NLP). Everything else keeps the existing deterministic engine.
+        if detect_structured(full_text):
+            parsed = parse_structured(full_text, case_matcher=_case_matcher)
+            result = parsed.result
+            # v2 validation issues (unknown IDs, invalid types, conflicts)
+            # are surfaced on the document for human review — they are
+            # never silently repaired.
+            document.structured_validation = parsed.validation or None
+            _apply_structured_metadata(db, document, parsed.metadata)
+        else:
+            result = run_extraction(full_text, case_matcher=_case_matcher)
+            document.structured_validation = None
         stats = persist_extraction(
             db, document=document, source=_source_of(db, document), result=result, segments=segments
         )
@@ -107,6 +124,46 @@ def _source_of(db: Session, document: Document) -> Source | None:
     if document.source_id:
         return db.get(Source, document.source_id)
     return None
+
+
+def _apply_structured_metadata(db: Session, document: Document, metadata: dict) -> None:
+    """Map a structured DOCUMENT section onto the existing Document/Source rows.
+
+    Only empty fields are filled: user-supplied upload metadata keeps
+    priority. The DOCUMENT title has no column in the current model, so it
+    is preserved only as part of the evidence text.
+    """
+    date_info = metadata.get("date")
+    publisher = metadata.get("source")
+    source_type = metadata.get("source_type")
+
+    if date_info is not None and document.publication_date is None and date_info.normalized:
+        document.publication_date = date_info.normalized
+
+    if not publisher and not source_type and date_info is None:
+        return
+
+    source = _source_of(db, document)
+    if source is None:
+        if not publisher:
+            return
+        source = create_source(
+            db,
+            publisher=publisher,
+            source_type=source_type or "UNKNOWN",
+            publication_date=date_info.normalized if date_info else None,
+        )
+        document.source_id = source.source_id
+        db.flush()
+        source.document_id = document.document_id
+    else:
+        if publisher and not source.publisher:
+            source.publisher = publisher
+        if source_type and (not source.source_type or source.source_type == "UNKNOWN"):
+            source.source_type = source_type
+        if date_info is not None and source.publication_date is None and date_info.normalized:
+            source.publication_date = date_info.normalized
+    db.flush()
 
 
 def _fail(db: Session, document: Document, exc: Exception) -> ProcessingOutcome:

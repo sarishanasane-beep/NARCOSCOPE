@@ -55,6 +55,17 @@ class CaseCandidate:
     span: TextSpan | None = None
     confidence: float = 0.7
     reason: str = "case reference found in document"
+    # Optional case category (e.g. DRUG_TRAFFICKING_INVESTIGATION) —
+    # provided only by explicit structured CASE blocks; None for the
+    # generic engine.
+    category: str | None = None
+    # Explicit structured CASE fields: STATUS (ACTIVE_INVESTIGATION, ...)
+    # and DESCRIPTION. Never inferred.
+    status: str | None = None
+    description: str | None = None
+    # Authoritative structured identity (v2 format: CASE_ID). Optional;
+    # never inferred. Used for deterministic ID-based deduplication.
+    structured_id: str | None = None
 
 
 @dataclass

@@ -38,11 +38,23 @@ router = APIRouter(tags=["entities"])
 
 @router.get("/entities", response_model=EntityList)
 def list_entities(
-    entity_type: str | None = None, limit: int = 200, offset: int = 0, db: Session = Depends(get_db)
+    entity_type: str | None = None,
+    status: str | None = None,
+    limit: int = 200,
+    offset: int = 0,
+    db: Session = Depends(get_db),
 ) -> EntityList:
+    """List entities with optional type and data-quality status filters.
+
+    ``status`` values: ACTIVE (canonical), MERGED (superseded — merged
+    into another record), ARCHIVED. Merged records are excluded from
+    graphs/stats but remain queryable here for provenance.
+    """
     query = db.query(Entity).order_by(Entity.canonical_name)
     if entity_type:
         query = query.filter(Entity.entity_type == entity_type)
+    if status:
+        query = query.filter(Entity.status == status.upper())
     total = query.count()
     items = query.offset(offset).limit(limit).all()
     return EntityList(items=[EntityOut.model_validate(e) for e in items], total=total)

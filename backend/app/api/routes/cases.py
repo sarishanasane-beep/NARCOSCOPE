@@ -16,9 +16,21 @@ def list_cases(
 ) -> CaseList:
     query = db.query(Case).order_by(Case.created_at.desc())
     if q:
-        query = query.filter(
-            Case.case_name.ilike(f"%{q}%") | Case.official_case_number.ilike(f"%{q}%")
-        )
+        # Normalized search: leading/trailing whitespace and repeated
+        # spaces are collapsed so "  operation  white strike " finds the
+        # canonical "Operation WHITE STRIKE" (display name preserved).
+        from app.utils.text import collapse_whitespace
+
+        needle = collapse_whitespace(q).lower()
+        filtered = [
+            c for c in query.all()
+            if needle in collapse_whitespace(
+                f"{(c.case_name or '')} {(c.official_case_number or '')}"
+            ).lower()
+        ]
+        total = len(filtered)
+        items = filtered[offset: offset + limit]
+        return CaseList(items=[CaseOut.model_validate(c) for c in items], total=total)
     total = query.count()
     items = query.offset(offset).limit(limit).all()
     return CaseList(items=[CaseOut.model_validate(c) for c in items], total=total)

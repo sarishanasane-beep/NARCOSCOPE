@@ -68,8 +68,12 @@ class EventOut(ORMModel):
     start_date: date | None = None
     end_date: date | None = None
     date_precision: str
+    event_time: str | None = None
     location_id: str | None = None
     case_id: str | None = None
+    document_id: str | None = None
+    evidence_id: str | None = None
+    structured_metadata: dict | None = None
     created_at: datetime
     updated_at: datetime
 

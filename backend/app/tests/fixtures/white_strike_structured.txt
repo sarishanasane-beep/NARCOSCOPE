@@ -1,0 +1,186 @@
+DOCUMENT:
+TITLE: Operation WHITE STRIKE: NCB Busts Major Cocaine Syndicate in Mumbai Region seizing 349 kg High-Grade Cocaine worth an Estimated Value ₹1,745 Crore
+DATE: 01 May 2026
+SOURCE: Press Information Bureau, Ministry of Home Affairs
+SOURCE_TYPE: GOVERNMENT_PRESS_RELEASE
+RELEASE_ID: 2257339
+LOCATION: PIB Delhi
+
+CASE:
+NAME: Operation WHITE STRIKE
+TYPE: DRUG_TRAFFICKING_INVESTIGATION
+STATUS: ACTIVE_INVESTIGATION
+DESCRIPTION: NCB operation that uncovered a large transnational cocaine trafficking syndicate and seized approximately 349 kilograms of high-grade cocaine valued at nearly ₹1,745 crore in the illicit market.
+
+ORGANIZATION:
+NAME: Narcotics Control Bureau
+ROLE: INVESTIGATING_AGENCY
+STATUS: CONDUCTED_OPERATION
+
+PERSON:
+NAME: Amit Shah
+ROLE: UNION HOME MINISTER
+STATUS: GOVERNMENT_OFFICIAL
+
+PERSON:
+NAME: Narendra Modi
+ROLE: PRIME MINISTER OF INDIA
+STATUS: GOVERNMENT_OFFICIAL
+
+LOCATION:
+NAME: Mumbai
+TYPE: CITY
+DESCRIPTION: Mumbai region where the cocaine trafficking syndicate was uncovered and where the first-stage seizure occurred.
+
+LOCATION:
+NAME: Kalamboli
+TYPE: AREA
+DESCRIPTION: Location in the Navi Mumbai-Thane region where the vehicle was intercepted.
+
+LOCATION:
+NAME: KWC Warehousing Complex
+TYPE: WAREHOUSE_COMPLEX
+DESCRIPTION: Sector KWC, Kalamboli, Navi Mumbai; location where the Maruti Suzuki Super Carry was intercepted.
+
+LOCATION:
+NAME: Navi Mumbai
+TYPE: CITY_REGION
+DESCRIPTION: Part of the Navi Mumbai-Thane region where the first strike occurred.
+
+LOCATION:
+NAME: Bhiwandi
+TYPE: CITY
+DESCRIPTION: Major warehousing hub in District Thane where the second consignment was found.
+
+LOCATION:
+NAME: Laxman Compound
+TYPE: AREA
+DESCRIPTION: Location of the warehouse where the second operation was conducted.
+
+LOCATION:
+NAME: Rehnal Bus Stand
+TYPE: LANDMARK
+DESCRIPTION: Near the warehouse location in Rehnal Gaon, Bhiwandi.
+
+LOCATION:
+NAME: Rehnal Gaon
+TYPE: AREA
+DESCRIPTION: Area in Bhiwandi where the second operation took place.
+
+LOCATION:
+NAME: District Thane
+TYPE: DISTRICT
+DESCRIPTION: District containing Bhiwandi.
+
+DRUG:
+NAME: Cocaine
+TYPE: HIGH_GRADE_COCAINE
+QUANTITY: Approximately 349 kg
+VALUE: Nearly ₹1,745 crore
+STATUS: SEIZED
+
+VEHICLE:
+NAME: Maruti Suzuki Super Carry
+TYPE: CNG_VEHICLE
+REGISTRATION: MH-03-DV-3803
+STATUS: INTERCEPTED
+
+SEIZURE:
+DRUG: Cocaine
+QUANTITY: Approximately 349 kg
+VALUE: Nearly ₹1,745 crore
+LOCATION: Mumbai and adjoining logistics corridor
+DESCRIPTION: Approximately 349 kg of high-grade cocaine was seized in a two-stage operation. The first strike recovered 136 packets of approximately 1 kg each. The second operation recovered an additional 213 packets of approximately 1 kg each.
+
+SEIZURE:
+DRUG: Cocaine
+QUANTITY: 136 packets, approximately 1 kg each
+LOCATION: KWC Warehousing Complex, Sector KWC, Kalamboli, Navi Mumbai
+DESCRIPTION: Cocaine recovered from cartons concealed using cricket pads and gloves inside a Maruti Suzuki Super Carry.
+
+SEIZURE:
+DRUG: Cocaine
+QUANTITY: 213 packets, approximately 1 kg each
+LOCATION: Warehouse at Laxman Compound near Rehnal Bus Stand, Rehnal Gaon, Bhiwandi, District Thane
+DESCRIPTION: Additional cocaine consignment recovered during the second operation.
+
+EVENT:
+TYPE: DRUG_SEIZURE
+DATE: 01 May 2026
+LOCATION: Mumbai region
+DESCRIPTION: NCB seized approximately 349 kg of high-grade cocaine valued at nearly ₹1,745 crore as part of Operation WHITE STRIKE.
+
+EVENT:
+TYPE: VEHICLE_INTERCEPTION
+LOCATION: KWC Warehousing Complex, Sector KWC, Kalamboli, Navi Mumbai
+DESCRIPTION: NCB officers intercepted a Maruti Suzuki Super Carry CNG vehicle bearing registration MH-03-DV-3803.
+
+EVENT:
+TYPE: ARREST
+STATUS: ONE_ACCUSED_APPREHENDED
+LOCATION: KWC Warehousing Complex, Sector KWC, Kalamboli, Navi Mumbai
+DESCRIPTION: One accused was apprehended on the spot after the vehicle containing concealed cocaine was searched.
+NOTE: The government press release does not provide the accused person's name.
+
+EVENT:
+TYPE: SECOND_OPERATION
+LOCATION: Laxman Compound near Rehnal Bus Stand, Rehnal Gaon, Bhiwandi, District Thane
+DESCRIPTION: NCB conducted a second operation at a warehouse and recovered an additional 213 packets of cocaine, approximately 1 kg each.
+
+EVENT:
+TYPE: INTELLIGENCE_INVESTIGATION
+DURATION: More than six months
+ORGANIZATION: Narcotics Control Bureau
+DESCRIPTION: The operation followed more than six months of sustained intelligence development and surveillance by NCB.
+
+EVENT:
+TYPE: INVESTIGATION
+STATUS: ONGOING
+DESCRIPTION: Preliminary investigation revealed cocaine concealed inside a machine cavity imported into India. The release states that the contraband was packed in nine layers of different types of polythene, including one layer of black greasy substance.
+
+EVENT:
+TYPE: INVESTIGATION
+STATUS: ONGOING
+DESCRIPTION: Intensive investigation is underway to apprehend the kingpin, handlers, financiers, and intended receivers of the consignment.
+
+RELATIONSHIP:
+SOURCE: Narcotics Control Bureau
+RELATIONSHIP_TYPE: CONDUCTED_OPERATION
+TARGET: Operation WHITE STRIKE
+
+RELATIONSHIP:
+SOURCE: Operation WHITE STRIKE
+RELATIONSHIP_TYPE: OCCURRED_AT
+TARGET: Mumbai
+
+RELATIONSHIP:
+SOURCE: Operation WHITE STRIKE
+RELATIONSHIP_TYPE: INVOLVED_DRUG
+TARGET: Cocaine
+
+RELATIONSHIP:
+SOURCE: Maruti Suzuki Super Carry
+RELATIONSHIP_TYPE: INTERCEPTED_AT
+TARGET: KWC Warehousing Complex
+
+RELATIONSHIP:
+SOURCE: Cocaine
+RELATIONSHIP_TYPE: SEIZED_AT
+TARGET: KWC Warehousing Complex
+
+RELATIONSHIP:
+SOURCE: Cocaine
+RELATIONSHIP_TYPE: SEIZED_AT
+TARGET: Laxman Compound
+
+NOTE:
+TEXT: The press release states that one accused was apprehended, but it does not identify the accused by name. No personal name has been invented in this structured record.
+
+NOTE:
+TEXT: The press release states that the syndicate is transnational and organised, but it does not provide a specific organisation name. No organisation name has been invented.
+
+NOTE:
+TEXT: The release describes the investigation as ongoing and says the kingpin, handlers, financiers, and intended receivers were still being pursued. No person is marked as convicted because the source does not report a conviction.
+
+NOTE:
+TEXT: The figures 136 packets and 213 packets correspond to the two stages of the operation and together account for 349 packets of approximately 1 kg each.

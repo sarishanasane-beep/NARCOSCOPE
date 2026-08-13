@@ -22,7 +22,7 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.models.case import Case
-from app.models.entity import ENTITY_STATUS_ACTIVE, Entity
+from app.models.entity import ENTITY_STATUS_ACTIVE, ENTITY_STATUS_MERGED, Entity
 from app.models.event import Event
 from app.models.fact import FACT_STATUS_CONFIRMED, Fact
 from app.models.location import Location
@@ -43,6 +43,39 @@ from app.services.graph.model import (
 POSSIBLE_MATCH = "POSSIBLE_MATCH"
 
 
+def canonical_case_endpoints(db: Session) -> dict[str, str]:
+    """CASE-typed entity ids -> canonical case node ids.
+
+    Covers both deduplication sources:
+      - entities explicitly reconciled into a Case (status MERGED +
+        ``merged_into_case_id``),
+      - legacy ACTIVE CASE-typed entities whose normalized name matches an
+        existing Case record.
+
+    Relationship endpoints are remapped through this table so the graph
+    always shows ONE logical CASE node and never a duplicate — the same
+    canonical-identity resolution used by the case-scoped graph, applied
+    here to the global trusted graph.
+    """
+    from app.utils.text import normalize_name
+
+    mapping: dict[str, str] = {}
+    for case in db.query(Case).filter(Case.merged_into_id.is_(None)).all():
+        keys = {
+            normalize_name(v)
+            for v in (case.case_name, case.operation_name, case.official_case_number)
+            if v
+        }
+        if not keys:
+            continue
+        for entity in db.query(Entity).filter(Entity.entity_type == "CASE").all():
+            if entity.status == ENTITY_STATUS_ACTIVE and normalize_name(entity.canonical_name) in keys:
+                mapping[entity.entity_id] = case_node_id(case.case_id)
+            elif entity.status == ENTITY_STATUS_MERGED and entity.merged_into_case_id == case.case_id:
+                mapping[entity.entity_id] = case_node_id(case.case_id)
+    return mapping
+
+
 def _aliases(entity: Entity) -> list[str]:
     if entity.person is not None:
         return list(entity.person.aliases or [])
@@ -52,6 +85,7 @@ def _aliases(entity: Entity) -> list[str]:
 
 
 def _entity_node(entity: Entity) -> GraphNode:
+    meta = entity.structured_metadata or {}
     return GraphNode(
         id=entity_node_id(entity.entity_id),
         name=entity.canonical_name,
@@ -60,6 +94,10 @@ def _entity_node(entity: Entity) -> GraphNode:
         status=entity.status,
         aliases=_aliases(entity),
         entity_id=entity.entity_id,
+        investigative_status=meta.get("investigative_status"),
+        mention_context=meta.get("mention_context"),
+        role=meta.get("role"),
+        document_id=entity.document_id,
     )
 
 
@@ -75,6 +113,7 @@ def _event_node(event: Event) -> GraphNode:
         date_precision=event.date_precision,
         start_date=event.start_date.isoformat() if event.start_date else None,
         end_date=event.end_date.isoformat() if event.end_date else None,
+        document_id=event.document_id,
     )
 
 
@@ -100,7 +139,13 @@ def build_trusted_graph(db: Session) -> tuple[dict[str, GraphNode], list[GraphEd
     edges: list[GraphEdge] = []
 
     # --- Trusted entities (only created by the confirmation workflow) ---
-    for entity in db.query(Entity).filter(Entity.status == ENTITY_STATUS_ACTIVE).all():
+    # Merged/superseded duplicates (merged_into_id set) are excluded so a
+    # canonicalized record never appears alongside its duplicate.
+    for entity in (
+        db.query(Entity)
+        .filter(Entity.status == ENTITY_STATUS_ACTIVE, Entity.merged_into_id.is_(None))
+        .all()
+    ):
         nodes[entity_node_id(entity.entity_id)] = _entity_node(entity)
 
     locations = {loc.location_id: loc for loc in db.query(Location).all()}
@@ -146,13 +191,16 @@ def build_trusted_graph(db: Session) -> tuple[dict[str, GraphNode], list[GraphEd
         nodes[case_node_id(case.case_id)] = _case_node(case)
 
     # --- Confirmed relationships (DIRECT/DERIVED only; never POSSIBLE_MATCH) ---
+    # A relationship whose endpoint is a reconciled / legacy CASE-typed
+    # entity routes to the canonical CASE node (never a duplicate).
+    case_endpoints = canonical_case_endpoints(db)
     for rel in db.query(Relationship).filter(Relationship.status == REL_STATUS_CONFIRMED).all():
         if rel.relationship_type == POSSIBLE_MATCH:
             continue
         if rel.classification == CLASSIFICATION_CANDIDATE:
             continue
-        source = entity_node_id(rel.source_entity_id)
-        target = entity_node_id(rel.target_entity_id)
+        source = case_endpoints.get(rel.source_entity_id, entity_node_id(rel.source_entity_id))
+        target = case_endpoints.get(rel.target_entity_id, entity_node_id(rel.target_entity_id))
         if source not in nodes or target not in nodes:
             continue
         edges.append(

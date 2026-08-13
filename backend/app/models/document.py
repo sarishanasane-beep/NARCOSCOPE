@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -42,6 +42,14 @@ class Document(Base):
     extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_id: Mapped[str | None] = mapped_column(ForeignKey("sources.source_id"), nullable=True)
     publication_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    # One structured TXT document represents one case (REQ 1). Set when the
+    # document's CASE_MATCH candidate is confirmed; anchors the case-scoped
+    # graph and links events/entities to the case without fabricated edges.
+    case_id: Mapped[str | None] = mapped_column(ForeignKey("cases.case_id"), nullable=True)
+    # Structured-validation issues found while parsing a v2 document
+    # (unknown IDs, invalid types, conflicting duplicate declarations).
+    # Surface for human review; never silently repaired.
+    structured_validation: Mapped[list | None] = mapped_column(JSON, nullable=True)
     duplicate_of_document_id: Mapped[str | None] = mapped_column(
         ForeignKey("documents.document_id"), nullable=True
     )
@@ -52,6 +60,7 @@ class Document(Base):
 
     # Many-to-one: many Documents belong to one Source (FK: source_id).
     source = relationship("Source", foreign_keys=[source_id], back_populates="documents")
+    case = relationship("Case", foreign_keys=[case_id])
     duplicate_of = relationship(
         "Document", remote_side=[document_id], foreign_keys=[duplicate_of_document_id]
     )

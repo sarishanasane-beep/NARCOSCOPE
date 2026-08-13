@@ -12,6 +12,14 @@ class EntityOut(ORMModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    # Structured-source semantics preserved at confirmation (role, status,
+    # mention_context, investigative_status, evidence_snippet).
+    structured_metadata: dict | None = None
+    document_id: str | None = None
+    # Deduplication state (canonical / merged / superseded): set only by
+    # an explicit human-approved merge or case reconciliation.
+    merged_into_id: str | None = None
+    merged_into_case_id: str | None = None
 
 
 class PersonCreate(BaseModel):
@@ -79,6 +87,10 @@ class EntityDetail(ORMModel):
     status: str
     created_at: datetime
     updated_at: datetime
+    structured_metadata: dict | None = None
+    document_id: str | None = None
+    merged_into_id: str | None = None
+    merged_into_case_id: str | None = None
     person: PersonOut | None = None
     organization: OrganizationOut | None = None
     location: LocationOut | None = None

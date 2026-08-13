@@ -36,6 +36,7 @@ from app.models.document import (
     STATUS_UPLOADED,
     Document,
 )
+from app.models.duplicate_decision import DECISION_KEEP_SEPARATE, DuplicateDecision
 from app.models.entity import (
     ENTITY_STATUS_ACTIVE,
     ENTITY_STATUS_ARCHIVED,
@@ -90,6 +91,7 @@ __all__ = [
     "Case",
     "Claim",
     "Document",
+    "DuplicateDecision",
     "Entity",
     "Event",
     "Evidence",
@@ -149,6 +151,7 @@ __all__ = [
     "CANDIDATE_STATUS_CONFIRMED",
     "CANDIDATE_STATUS_REJECTED",
     "CANDIDATE_STATUS_EDITED",
+    "DECISION_KEEP_SEPARATE",
     "ACTION_CREATE",
     "ACTION_UPDATE",
     "ACTION_CONFIRM",

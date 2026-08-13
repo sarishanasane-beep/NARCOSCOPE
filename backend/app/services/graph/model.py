@@ -55,6 +55,13 @@ class GraphNode:
     end_date: str | None = None
     case_number: str | None = None
     jurisdiction: str | None = None
+    # Structured-source semantics (entities only): the investigative
+    # status / mention context preserved from the confirmed candidate.
+    investigative_status: str | None = None
+    mention_context: str | None = None
+    role: str | None = None
+    # Source document id (entities/events) — for source-document details.
+    document_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -73,6 +80,10 @@ class GraphNode:
             "end_date": self.end_date,
             "case_number": self.case_number,
             "jurisdiction": self.jurisdiction,
+            "investigative_status": self.investigative_status,
+            "mention_context": self.mention_context,
+            "role": self.role,
+            "document_id": self.document_id,
         }
 
 

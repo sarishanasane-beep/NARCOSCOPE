@@ -29,31 +29,45 @@ router = APIRouter(prefix="/graph", tags=["graph"])
 
 
 @router.get("/stats", response_model=GraphStats)
-def graph_stats(db: Session = Depends(get_db)) -> GraphStats:
-    """Overview counts for the trusted graph (nodes/edges by type)."""
-    return GraphStats(**graph_service.stats(db))
+def graph_stats(case_id: str | None = None, db: Session = Depends(get_db)) -> GraphStats:
+    """Overview counts for the trusted graph (nodes/edges by type).
+
+    Pass ``case_id`` to scope the statistics to ONE case — analytics then
+    reflect only that case's trusted graph, never other cases or
+    unrelated records.
+    """
+    return GraphStats(**graph_service.stats(db, case_id=case_id))
 
 
 @router.get("/analytics/centrality")
-def graph_centrality(db: Session = Depends(get_db)) -> dict:
-    """Normalized degree + betweenness centrality for trusted nodes."""
+def graph_centrality(case_id: str | None = None, db: Session = Depends(get_db)) -> dict:
+    """Normalized degree + betweenness centrality for trusted nodes.
+
+    ``case_id`` scopes the calculation to one case's trusted graph.
+    """
     return {
-        "degree": degree_centrality(db),
-        "betweenness": betweenness_centrality(db),
+        "degree": degree_centrality(db, case_id=case_id),
+        "betweenness": betweenness_centrality(db, case_id=case_id),
     }
 
 
 @router.get("/analytics/components")
-def graph_components(db: Session = Depends(get_db)) -> dict:
-    """Connected components of the trusted graph."""
-    components = connected_components(db)
+def graph_components(case_id: str | None = None, db: Session = Depends(get_db)) -> dict:
+    """Connected components of the trusted graph.
+
+    ``case_id`` scopes the components to one case.
+    """
+    components = connected_components(db, case_id=case_id)
     return {"total": len(components), "components": components}
 
 
 @router.get("/analytics/clusters")
-def graph_clusters(db: Session = Depends(get_db)) -> dict:
-    """Network clusters (neutral terminology) with aggregate stats."""
-    clusters = detect_clusters(db)
+def graph_clusters(case_id: str | None = None, db: Session = Depends(get_db)) -> dict:
+    """Network clusters (neutral terminology) with aggregate stats.
+
+    ``case_id`` scopes the clusters to one case.
+    """
+    clusters = detect_clusters(db, case_id=case_id)
     return {"total": len(clusters), "clusters": clusters}
 
 
@@ -109,6 +123,24 @@ def case_graph(
     return GraphResponse(**payload)
 
 
+@router.get("/case/{case_id}/full")
+def case_graph_full(
+    case_id: str, db: Session = Depends(get_db)
+) -> dict:
+    """The COMPLETE trusted graph belonging to one case.
+
+    Default view for the case-centric Network Explorer: every trusted
+    entity, event and confirmed relationship of the case, including
+    isolated / mentioned-only entities that belong to the case document
+    (never connected by fabricated edges). Filtering is a separate view
+    operation on this payload.
+    """
+    payload = graph_service.get_case_graph_full(db, case_id)
+    if payload is None:
+        raise NotFoundError("Case not found.")
+    return payload
+
+
 @router.get("/event/{event_id}", response_model=GraphResponse)
 def event_graph(
     event_id: str,
@@ -145,6 +177,20 @@ def location_graph(
     if payload is None:
         raise NotFoundError("Location not found.")
     return GraphResponse(**payload)
+
+
+@router.get("/case/{case_id}/locations")
+def case_locations(case_id: str, db: Session = Depends(get_db)) -> dict:
+    """Location-focused analytical view of ONE case (trusted data only).
+
+    Returns the case's location nodes, explicit location-related
+    relationship edges, and events with an explicit location link. No
+    proximity / same-city / same-district inference is ever applied.
+    """
+    payload = graph_service.get_case_locations(db, case_id)
+    if payload is None:
+        raise NotFoundError("Case not found.")
+    return payload
 
 
 @router.get("/provenance/{edge_kind}/{edge_id}", response_model=GraphProvenanceOut)

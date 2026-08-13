@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Index, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -51,8 +51,19 @@ class Event(Base):
     date_precision: Mapped[str] = mapped_column(
         String(20), default=DATE_PRECISION_UNKNOWN, nullable=False
     )
+    # Exact TIME value from the structured source (e.g. "14:30") — kept as
+    # the source wrote it; "Not provided" when absent. Never derived from
+    # the document publication date or upload timestamp.
+    event_time: Mapped[str | None] = mapped_column(String(20), nullable=True)
     location_id: Mapped[str | None] = mapped_column(ForeignKey("locations.location_id"), nullable=True)
     case_id: Mapped[str | None] = mapped_column(ForeignKey("cases.case_id"), nullable=True)
+    # Direct traceability: the source document + exact evidence block that
+    # materialized this event (set at confirmation from the candidate).
+    document_id: Mapped[str | None] = mapped_column(ForeignKey("documents.document_id"), nullable=True)
+    evidence_id: Mapped[str | None] = mapped_column(ForeignKey("evidence.evidence_id"), nullable=True)
+    # Structured-source semantics preserved at confirmation (status,
+    # duration, organization, drug, vehicle, person, evidence_snippet...).
+    structured_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
@@ -60,8 +71,12 @@ class Event(Base):
 
     location = relationship("Location")
     case = relationship("Case", back_populates="events")
+    document = relationship("Document")
+    evidence = relationship("Evidence")
 
     __table_args__ = (
         Index("ix_events_start_date", "start_date"),
         Index("ix_events_event_type", "event_type"),
+        Index("ix_events_case_id", "case_id"),
+        Index("ix_events_document_id", "document_id"),
     )

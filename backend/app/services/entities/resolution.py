@@ -55,18 +55,27 @@ def create_entity(
     parent_location: str | None = None,
     location_type: str = "OTHER",
     organization_type: str = "ORGANIZATION",
+    structured_metadata: dict | None = None,
+    document_id: str | None = None,
     user: str | None = None,
 ) -> Entity:
     """Create a trusted entity plus its specialized record.
 
     Possible matches against existing entities are logged (never
-    auto-merged) so the human reviewer can decide.
+    auto-merged) so the human reviewer can decide. ``structured_metadata``
+    carries structured-source semantics (role, status, mention_context,
+    investigative_status) so the distinction between a contextual mention
+    and an investigative subject survives confirmation. ``document_id``
+    records the source document so case scoping of isolated entities is
+    possible without fabricating membership edges.
     """
     entity = Entity(
         entity_id=str(uuid.uuid4()),
         entity_type=entity_type,
         canonical_name=canonical_name,
         status=ENTITY_STATUS_ACTIVE,
+        structured_metadata=structured_metadata,
+        document_id=document_id,
     )
     db.add(entity)
     db.flush()

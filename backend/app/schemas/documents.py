@@ -40,6 +40,9 @@ class DocumentOut(ORMModel):
     source_id: str | None = None
     publication_date: date | None = None
     duplicate_of_document_id: str | None = None
+    # Structured-validation issues found while parsing a v2 document
+    # (unknown IDs, invalid types, conflicting duplicate declarations).
+    structured_validation: list | None = None
     created_at: datetime
     updated_at: datetime
 

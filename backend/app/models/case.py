@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, Index, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -34,6 +34,11 @@ class Case(Base):
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     status: Mapped[str] = mapped_column(String(30), default="UNKNOWN", nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Canonical case after an explicit human-approved merge; merged cases
+    # are excluded from active lists/stats/graphs.
+    merged_into_id: Mapped[str | None] = mapped_column(
+        ForeignKey("cases.case_id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False

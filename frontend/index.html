@@ -193,12 +193,49 @@ textarea{min-height:70px;resize:vertical}
 .kbd{font-family:var(--mono);font-size:10px;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;background:var(--bg2)}
 
 /* ---------- graph ---------- */
-.graph-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:8px;overflow:auto;padding:10px;margin:10px 0}
-.graph-wrap svg{display:block;min-width:680px}
+/* The graph is sized to its own panel (REQ 34/35): a large responsive
+   area with internal camera zoom/pan — no page-level scrolling, no
+   scrollbars (overflow hidden; the camera viewBox is the viewport). */
+.graph-wrap{background:var(--bg2);border:1px solid var(--line);border-radius:8px;overflow:hidden;padding:10px;margin:10px 0;position:relative;touch-action:none;height:clamp(560px,74vh,880px)}
+.graph-wrap svg{display:block;width:100%;height:100%;min-width:0}
+.graph-wrap.dragging{cursor:grabbing}
+/* Edge labels: always readable (REQ 21-24), brighten on hover/selection.
+   The stroke halo keeps text legible over crossing edges. */
+.g-edge{cursor:pointer}  .g-edge text.edge-label{opacity:.85;transition:opacity .12s ease;font-size:12px;font-weight:600;fill:#b6bfdd;paint-order:stroke;stroke:rgba(6,8,16,.95);stroke-width:4px;letter-spacing:.3px}
+  .g-edge:hover text.edge-label{opacity:1;fill:#e8edfb}
+/* Analytical accordions (REQ 15/16/19-21): collapsed by default, lazy
+   content, accessible toggle headers. */
+.acc{border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel);margin-bottom:10px;overflow:hidden}
+.acc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:11px 14px;background:var(--panel3);border:none;color:var(--text2);font-size:13px;font-weight:750;cursor:pointer;text-align:left}
+.acc-head:hover{color:var(--text);background:rgba(91,140,255,.08)}
+.acc-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.acc-head .acc-arrow{font-size:10px;color:var(--accent2);transition:transform .15s ease}
+.acc-body{padding:12px 14px;border-top:1px solid var(--line)}
+.acc-note{font-size:11px;color:var(--muted);margin-top:10px}
+/* Analysis scope toggle (REQ 14): Current Case is the default; global
+   analysis is an explicit opt-in — never a silent mix. */
+.scope-toggle{display:inline-flex;gap:14px;align-items:center;font-size:12px;color:var(--muted);border:1px solid var(--line2);border-radius:var(--radius-sm);padding:6px 10px;background:var(--panel3)}
+.scope-toggle label{display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.scope-toggle input{cursor:pointer}
+.ana-scope-line{font-size:11px;color:var(--muted)}
 .hop-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
 .hop-bar button{background:var(--panel3);color:var(--text2);border:1px solid var(--line2);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;font-weight:600}
-.hop-bar button.active{background:rgba(91,140,255,.18);border-color:var(--accent);color:var(--accent2)}
-.hop-note{font-size:11.5px;color:var(--muted)}
+.hop-bar button.active{background:rgba(91,140,255,.18);border-color:var(--accent);color:var(--accent2)}  .hop-note{font-size:11.5px;color:var(--muted)}
+  .net-center{background:var(--panel3);border:1px solid var(--line2);border-radius:var(--radius-sm);padding:10px 12px;margin-top:10px}
+  .net-center .lbl{font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent2);font-weight:800;margin-bottom:3px}
+  .net-center .nm{font-size:13px;font-weight:700;color:var(--text);word-break:break-word}
+  .net-center .tp{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .case-head{background:var(--panel3);border:1px solid var(--line2);border-left:3px solid var(--accent);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:10px}
+  .case-head .case-ttl{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:var(--accent2);font-weight:800}
+  .case-head .case-name{font-size:17px;font-weight:800;color:var(--text);margin-top:3px}
+  .case-head .case-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  .case-head .case-counts{font-size:12.5px;color:var(--text);margin-top:6px;font-weight:600}
+  .filter-active{display:inline-block;background:rgba(159,183,255,.14);border:1px solid var(--accent);color:var(--accent2);font-size:10px;letter-spacing:1.4px;text-transform:uppercase;font-weight:800;padding:2px 8px;border-radius:var(--radius-sm);margin-right:8px}
+  .net-graph-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:8px 0 4px}
+  .net-graph-head .ttl{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--accent2);font-weight:800}
+  .net-graph-head .ctr{font-size:12.5px;color:var(--muted)}
+  .net-graph-head .ctr b{color:var(--text);font-weight:650}
+  .net-graph-head .stt{font-size:11.5px;color:var(--muted)}
 .prov-box{margin-top:10px;padding:12px;border:1px solid #33406b;border-radius:8px;background:var(--bg2);font-size:12.5px}
 .prov-box h4{margin:0 0 8px;color:var(--warn);font-size:12px;letter-spacing:.5px}
 .legend{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:12px;flex-wrap:wrap}
@@ -253,8 +290,11 @@ textarea{min-height:70px;resize:vertical}
 .gbtn:hover{border-color:var(--accent);color:var(--text)}
 .gbtn.active{background:rgba(91,140,255,.18);border-color:var(--accent);color:var(--accent2)}
 .gbtn:disabled{opacity:.4;cursor:not-allowed}
-.graph-wrap{position:relative;touch-action:none}
-.graph-wrap.dragging{cursor:grabbing}
+/* Depth + Direct/Indirect/Contextual view controls (REQ 18-19) */
+.net-viewbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 2px}
+.net-viewbar .g-label{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.viewchk{display:inline-flex;gap:5px;align-items:center;cursor:pointer;font-size:12px;color:var(--text2);user-select:none}
+.viewchk input{accent-color:var(--accent);cursor:pointer}
 
 /* ---------- detail drawer (Part 2) ---------- */
 .drawer-backdrop{position:fixed;inset:0;background:rgba(5,7,14,.55);z-index:110;display:none}
@@ -359,6 +399,224 @@ textarea{min-height:70px;resize:vertical}
 </aside>
 
 <div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Pure graph-layout core: deterministic, DOM-free so it can be unit-tested
+     with plain Node (frontend/test_graph_layout.js). Renders full wrapped
+     node names, layers nodes by graph distance from the case root, keeps
+     labels in the inter-ring gaps, and derives a bounding box that includes
+     labels + badges so Fit-to-view never clips anything. -->
+<script id="layoutCore">
+"use strict";
+function graphLayoutWrap(name) {
+  const s = String(name || "(unnamed)");
+  const MAX = 15;
+  if (s.length <= MAX) return [s];
+  // Prefer the break that BALANCES the two lines (readable + compact);
+  // a long single word is hard-split at MAX as the fallback.
+  let best = -1, bestScore = Infinity;
+  for (let i = 5; i < s.length - 4; i++) {
+    if (s[i] === " ") {
+      const score = Math.abs(i - s.length / 2);
+      if (score < bestScore) { bestScore = score; best = i; }
+    }
+  }
+  if (best > 0) return [s.slice(0, best).trim(), s.slice(best).trim()];
+  const cut = Math.min(MAX, s.length - 1);
+  return [s.slice(0, cut).trim(), s.slice(cut).trim()];
+}
+function graphLabelDims(name) {
+  const lines = graphLayoutWrap(name);
+  const w = Math.max(30, Math.max.apply(null, lines.map((l) => l.length)) * GRAPH_CHAR_W);
+  return { lines, w, h: lines.length * GRAPH_LINE_H };
+}
+const GRAPH_TYPE_ORDER = { CASE: 0, ORGANIZATION: 1, AGENCY: 1, PERSON: 2, LOCATION: 3, DRUG: 4, VEHICLE: 5, EVENT: 6, OTHER: 7 };
+const GRAPH_NODE_R = 22;
+const GRAPH_CASE_R = 30;
+const GRAPH_CHAR_W = 8;     // estimated glyph width at the 16px node-label font
+const GRAPH_LINE_H = 20;    // line height for 16px node labels
+const GRAPH_RING_GAP = 20;    // angular gap between node slots on a ring
+const GRAPH_RING_STEP = 108;  // radial pitch between rings (node + outward label + badge + gap)
+const GRAPH_ISO_PER_RING = 6; // contextual / isolated nodes per outer ring
+
+/** Deterministic RADIAL layout — an investigative network, not a
+ *  force-directed scatter (REQ 2-6, 30).
+ *
+ *  - the center entity/case sits at the origin and is visually dominant,
+ *  - BFS graph distance from the center decides the ring (never an
+ *    invented relationship — depth is positioning only): ring 1 = direct
+ *    relationships, ring 2 = one hop further, etc.
+ *  - nodes within a ring are ordered deterministically (type/name, then
+ *    an angular-barycenter heuristic so edges stay short and crossings
+ *    stay low), then spread at even angular intervals; the ring radius
+ *    grows until full wrapped labels fit around the circumference,
+ *  - labels are placed OUTWARD from the ring (never across the node
+ *    circle) and never overlap their own node,
+ *  - nodes with NO path to the center (contextual / mentioned-only /
+ *    declared-but-unlinked) go to dedicated OUTER rings — separated by
+ *    connectivity, never by type,
+ *  - the bounding box includes every circle, wrapped label and badge so
+ *    the camera view never clips anything.
+ *
+ * Returns positions, label dims, per-node layer, label boxes/metadata,
+ * the isolated set and a bounds box. Pure and DOM-free so it can be
+ * unit-tested in plain Node.
+ */
+function graphLayout({ nodes, edges, centerId }) {
+  const list = nodes || [];
+  const dims = {};
+  list.forEach((n) => { dims[n.id] = graphLabelDims(n.name); });
+  const ids = new Set(list.map((n) => n.id));
+  const visibleEdges = (edges || []).filter((e) => ids.has(e.source) && ids.has(e.target));
+  const adj = new Map();
+  visibleEdges.forEach((e) => {
+    if (!adj.has(e.source)) adj.set(e.source, new Set());
+    if (!adj.has(e.target)) adj.set(e.target, new Set());
+    adj.get(e.source).add(e.target);
+    adj.get(e.target).add(e.source);
+  });
+  const dist = new Map([[centerId, 0]]);
+  const queue = [centerId];
+  while (queue.length) {
+    const u = queue.shift();
+    const du = dist.get(u) + 1;
+    (adj.get(u) || []).forEach((v) => {
+      if (!dist.has(v)) { dist.set(v, du); queue.push(v); }
+    });
+  }
+  const layers = new Map();
+  list.forEach((n) => {
+    const d = n.id === centerId ? 0 : (dist.has(n.id) ? dist.get(n.id) : -1);
+    if (!layers.has(d)) layers.set(d, []);
+    layers.get(d).push(n);
+  });
+  const rank = (n) => (GRAPH_TYPE_ORDER[n.type] == null ? 7 : GRAPH_TYPE_ORDER[n.type]);
+  const byName = (a, b) => String(a.name || "").localeCompare(String(b.name || ""));
+  const slotW = (n) => Math.max(dims[n.id].w, 2 * GRAPH_NODE_R);
+  const maxD = Math.max(0, ...[...layers.keys()].filter((d) => d > 0));
+
+  // Deterministic circular ordering: type/name first, then 4 passes of the
+  // angular-barycenter heuristic — each node gravitates toward the mean
+  // angle of its neighbours so edges stay short and crossings stay low.
+  function orderRing(arr) {
+    let order = [...arr].sort((a, b) => rank(a) - rank(b) || byName(a, b));
+    for (let pass = 0; pass < 4; pass++) {
+      const n = order.length;
+      const step = (2 * Math.PI) / n;
+      const ang = new Map();
+      order.forEach((nd, i) => ang.set(nd.id, -Math.PI / 2 + i * step));
+      const target = new Map();
+      order.forEach((nd) => {
+        const nb = adj.get(nd.id) || new Set();
+        let sx = 0, sy = 0, cnt = 0;
+        nb.forEach((v) => {
+          const a = ang.get(v);
+          if (a != null) { sx += Math.cos(a); sy += Math.sin(a); cnt++; }
+        });
+        target.set(nd.id, cnt ? Math.atan2(sy, sx) : ang.get(nd.id));
+      });
+      order = [...order].sort((a, b) => target.get(a.id) - target.get(b.id) || rank(a) - rank(b) || byName(a, b));
+    }
+    return order;
+  }
+  const orderRings = new Map();
+  layers.forEach((l, d) => { if (d > 0) orderRings.set(d, orderRing(l)); });
+  const isoList = [...(layers.get(-1) || [])].sort((a, b) => rank(a) - rank(b) || byName(a, b));
+
+  const pos = {}, layerOf = {}, labelBox = {}, labelMeta = {};
+  pos[centerId] = { x: 0, y: 0 };
+  layerOf[centerId] = 0;
+
+  // Outward label placement: text always reads AWAY from the center and
+  // never across its own node circle. Top/bottom nodes centre their label;
+  // side nodes left/right-align it so it only ever extends off the ring
+  // (self-overlap is impossible; neighbour spacing is sized by label width).
+  function placeRing(arr, ringR, ringIndex) {
+    const n = arr.length;
+    const step = (2 * Math.PI) / n;
+    const start = -Math.PI / 2 + (n % 2) * (Math.PI / Math.max(2, n));
+    arr.forEach((nd, i) => {
+      const a = start + i * step;
+      const x = ringR * Math.cos(a), y = ringR * Math.sin(a);
+      pos[nd.id] = { x, y };
+      layerOf[nd.id] = ringIndex;
+      const d = dims[nd.id];
+      const cx = Math.cos(a), sy = Math.sin(a);
+      let meta;
+      if (Math.abs(cx) > 0.62) {
+        const dirx = cx > 0 ? 1 : -1;
+        const tx = x + dirx * (GRAPH_NODE_R + 9);
+        meta = { x: tx, y, anchor: dirx > 0 ? "start" : "end", dir: dirx, below: true };
+      } else {
+        const below = sy > 0;
+        const ty = y + (below ? 1 : -1) * (GRAPH_NODE_R + 9);
+        meta = { x, y: ty, anchor: "middle", dir: below ? 1 : -1, below };
+      }
+      const top = meta.below ? meta.y : meta.y - d.h;
+      const base = meta.below ? meta.y + GRAPH_LINE_H : meta.y - (d.lines.length - 1) * GRAPH_LINE_H;
+      labelMeta[nd.id] = { cx: meta.x, base, anchor: meta.anchor, dir: meta.dir, below: meta.below };
+      labelBox[nd.id] = { x: meta.x - (meta.anchor === "middle" ? d.w / 2 : 0), y: top, w: d.w, h: d.h, dir: meta.dir };
+    });
+  }
+
+  let R = 0;
+  for (let d = 1; d <= maxD; d++) {
+    const arr = orderRings.get(d);
+    if (!arr || !arr.length) continue;
+    const circ = arr.reduce((acc, nd) => acc + slotW(nd) + GRAPH_RING_GAP, 0);
+    R = Math.max(R + GRAPH_RING_STEP, circ / (2 * Math.PI));
+    placeRing(arr, R, d);
+  }
+  // The center's label sits ABOVE the root (nothing sits above it).
+  {
+    const d = dims[centerId];
+    const top = pos[centerId].y - GRAPH_CASE_R - 12 - d.h;
+    labelMeta[centerId] = { cx: pos[centerId].x, base: top + d.h, anchor: "middle", dir: -1, below: false };
+    labelBox[centerId] = { x: pos[centerId].x - d.w / 2, y: top, w: d.w, h: d.h, dir: -1 };
+  }
+  // Peripheral band: unconnected / contextual nodes on outer rings — always
+  // beyond the connected network, never mixed into it (REQ 14).
+  for (let i = 0; i < isoList.length; i += GRAPH_ISO_PER_RING) {
+    const chunk = isoList.slice(i, i + GRAPH_ISO_PER_RING);
+    if (!chunk.length) continue;
+    const circ = chunk.reduce((acc, nd) => acc + slotW(nd) + GRAPH_RING_GAP, 0);
+    R = Math.max(R + GRAPH_RING_STEP, circ / (2 * Math.PI));
+    placeRing(chunk, R, -1);
+  }
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const span = (x, y) => {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  };
+  list.forEach((n) => {
+    const p = pos[n.id];
+    if (!p) return;
+    const r = n.id === centerId ? GRAPH_CASE_R : GRAPH_NODE_R;
+    span(p.x - r, p.y - r); span(p.x + r, p.y + r);
+    const lb = labelBox[n.id];
+    if (lb) { span(lb.x, lb.y); span(lb.x + lb.w, lb.y + lb.h); }
+    const bY = lb ? (lb.dir > 0 ? lb.y + lb.h + 5 : lb.y - 17) : p.y + r + 8;
+    span(p.x - 20, bY); span(p.x + 20, bY + 12);
+  });
+  visibleEdges.forEach((e) => {
+    const p1 = pos[e.source], p2 = pos[e.target];
+    if (p1 && p2) span((p1.x + p2.x) / 2, (p1.y + p2.y) / 2);
+  });
+  if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 10; maxY = 10; }
+  return {
+    pos,
+    dims,
+    labelBox,
+    labelMeta,
+    layers: orderRings,
+    layerOf,
+    isoIds: new Set(isoList.map((n) => n.id)),
+    bounds: { minX, minY, maxX, maxY },
+  };
+}
+</script>
 
 <script>
 "use strict";
@@ -728,29 +986,55 @@ async function reviewCandidate(id, action) {
 let currentHops = 1;
 // Backend filters forwarded to the trusted graph endpoints.
 let graphFilters = { relationship_type: "", entity_type: "", case_id: "" };
-let graphView = { scale: 1, tx: 0, ty: 0 }; // zoom/pan state
+let graphView = { s: 1, cx: 0, cy: 0 };    // camera state: scale + centre
+let __userView = false;                     // true once the user zoomed/panned (disables auto-refit)
 let lastGraphContainer = null;              // graph-wrap element id of the current graph
 let __graphRaw = null;                      // last raw trusted graph payload (for in-graph search)
+let __lastGraph = null;                     // last rendered { data, opts, containerId } (for Fit/Reset view)
+let LAYER_BOUNDS = null;                    // layout bbox incl. labels (set by renderGraphSVG)
 
-function renderGraphSVG(data, containerId) {
+function renderGraphSVG(data, containerId, opts) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const W = 900, H = 560, CX = 450, CY = 280;
-  const nodes = data.nodes || [], edges = data.edges || [], center = data.center || {};
+  __lastGraph = { data, opts: opts || {}, containerId };
+  const wrap = el.closest(".graph-wrap") || el.parentElement;
+  const nodes = data.nodes || [], edges = data.edges || [];
+  // Camera center may differ from the case root (REQ 40) — centering is a
+  // view/layout operation that never changes the trusted data.
+  const center = (opts && opts.center && opts.center.id) ? opts.center : (data.center || {});
+  const filterActive = !!(opts && opts.filterActive);
+  const activeNodes = (opts && opts.activeNodes) || null;
+  const activeEdges = (opts && opts.activeEdges) || null;
+  const isMini = !!(opts && opts.isMini); // e.g. location-network graph
+  const directness = !!(opts && opts.directness); // case mode: solid = touches center
+  const selectable = !!(opts && opts.selectable); // case mode: click sets selection
+  const selActive = !!(opts && opts.selNodes && opts.selNodes.size);
+  const selNodes = selActive ? (opts.selNodes || null) : null;
+  const selEdges = selActive ? (opts.selEdges || null) : null;
   const ids = new Set(nodes.map((n) => n.id));
   const visibleEdges = edges.filter((e) => ids.has(e.source) && ids.has(e.target));
-  const neighbors = nodes.filter((n) => n.id !== center.id);
-  const radius = Math.min(250, 110 + neighbors.length * 20);
-  const pos = {};
-  pos[center.id] = { x: CX, y: CY };
-  neighbors.forEach((n, i) => {
-    const angle = (2 * Math.PI * i) / Math.max(neighbors.length, 1) - Math.PI / 2;
-    pos[n.id] = { x: CX + radius * Math.cos(angle), y: CY + radius * Math.sin(angle) };
-  });
+  const nameById = {};
+  nodes.forEach((n) => { nameById[n.id] = n.name; });
+  // Deterministic RADIAL layout (REQ 2-6): the center sits at the origin;
+  // BFS distance decides the ring (ring 1 = direct relationships, ring 2 =
+  // one hop further…), labels sit OUTWARD on each ring, and nodes with no
+  // path to the center live on dedicated outer rings. The bounding box
+  // includes labels and badges so Fit-to-view never clips anything.
+  const L = graphLayout({ nodes, edges: visibleEdges, centerId: center.id });
+  LAYER_BOUNDS = L.bounds;
+  const pos = L.pos, dims = L.dims, isoIds = L.isoIds, layerOf = L.layerOf || {};
+  const labelBox = L.labelBox || {}, labelMeta = L.labelMeta || {};
   const byPair = {};
   visibleEdges.forEach((e) => { const k = e.source + "|" + e.target; (byPair[k] = byPair[k] || []).push(e); });
-  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trusted knowledge graph">`;
+  // Labels of edges converging on the SAME node fan out around it (REQ
+  // 12/21) instead of stacking on top of each other near the target.
+  const tgtCount = {}, tgtSeen = {};
+  visibleEdges.forEach((e) => { tgtCount[e.target] = (tgtCount[e.target] || 0) + 1; });
+  let svg = `<svg preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trusted knowledge graph">`;
   svg += `<defs><marker id="garrow" viewBox="0 0 10 10" refX="24" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#55608a"/></marker></defs>`;
+  // Two-pass edge rendering: compute each edge's path + label box, resolve
+  // label-vs-label collisions (deterministic, bounded), then draw (REQ 21-25).
+  const edgeGeom = new Map();
   for (const [k, group] of Object.entries(byPair)) {
     const [s, t] = k.split("|");
     const p1 = pos[s], p2 = pos[t];
@@ -763,80 +1047,319 @@ function renderGraphSVG(data, containerId) {
       const nx = -dy / len, ny = dx / len;
       const x1 = p1.x + nx * off, y1 = p1.y + ny * off;
       const x2 = p2.x + nx * off, y2 = p2.y + ny * off;
-      const provId = e.relationship_id || e.fact_id || e.event_id || "";
-      const provKind = e.provenance_kind || "relationship";
-      // DIRECT edges are solid; DERIVED edges are dashed. Candidate edges
-      // never reach the trusted graph — the backend only serves confirmed rows.
-      const dashed = String(e.classification || "DIRECT").toUpperCase() === "DERIVED" ? " stroke-dasharray=\"6,4\"" : "";
-      svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#55608a" stroke-width="1.5" marker-end="url(#garrow)"${dashed} style="cursor:pointer" onclick="explainEdge('${esc(provKind)}','${esc(provId)}')"/>`;
-      svg += `<text x="${(x1 + x2) / 2 + nx * 8}" y="${(y1 + y2) / 2 + ny * 8 - 5}" font-size="9" fill="#8a93b8" text-anchor="middle">${esc(e.relationship_type)}</text>`;
+      // Same-ring edges (e.g. two ring-1 nodes) are gentle arcs bowed
+      // OUTWARD from the center so they never run through neighbouring
+      // labels; cross-ring edges stay straight and arrowed (REQ 21-26).
+      // Direction is always SOURCE → TARGET.
+      const sameRing = (layerOf[e.source] === layerOf[e.target]);
+      let path, mx, my;
+      if (sameRing) {
+        const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
+        const ml = Math.hypot(midX, midY) || 1;
+        const ctrlX = midX + (midX / ml) * 52, ctrlY = midY + (midY / ml) * 52;
+        path = `M ${x1} ${y1} Q ${ctrlX} ${ctrlY} ${x2} ${y2}`;
+        mx = midX; my = midY;
+      } else {
+        path = `M ${x1} ${y1} L ${x2} ${y2}`;
+        mx = (x1 + x2) / 2; my = (y1 + y2) / 2;
+      }
+      let lx = mx + nx * 10, ly = my + ny * 10 - 4;
+      // Labels of edges converging on the same node fan out around it
+      // instead of stacking near the target (REQ 12/21).
+      const tIdx = tgtSeen[e.target] = (tgtSeen[e.target] || 0) + 1;
+      const tOff = (tIdx - (tgtCount[e.target] - 1) / 2) * 18;
+      lx += nx * tOff; ly += ny * tOff;
+      // Nudge along the edge until the label clears every node-label box
+      // (REQ 12/21) — each label stays attached to its own edge.
+      // Half-extents slightly above the rendered 12px glyph width so the
+      // collision pass separates labels with a safety margin but converges
+      // (over-wide estimates make the cluster jostle instead of settling).
+      const ew = Math.max(26, String(e.relationship_type || "").length * 4.2);
+      const eh = 11;
+      const dirx = dx / len, diry = dy / len;
+      for (let step = 0; step < 5; step++) {
+        let hit = false;
+        for (const n of nodes) {
+          const pn = pos[n.id];
+          if (!pn) continue;
+          const lbn = labelBox[n.id];
+          if (lbn && lx + ew > lbn.x && lx - ew < lbn.x + lbn.w && ly + eh > lbn.y && ly - eh < lbn.y + lbn.h) { hit = true; break; }
+        }
+        if (!hit) break;
+        lx += dirx * 18; ly += diry * 18;
+      }
+      edgeGeom.set(e.id, { path, lx, ly, w: ew, h: eh, nx, ny, dirx, diry });
     });
   }
+  // Combined label collision resolution (bounded, deterministic): edge
+  // labels are pushed apart from each other perpendicular to their edges
+  // AND nudged along their own edges until clear of node labels (REQ 12/21)
+  // — resolution can never shove a label back onto a node label.
+  const geoms = [...edgeGeom.values()];
+  for (let iter = 0; iter < 12; iter++) {
+    let moved = false;
+    for (let i = 0; i < geoms.length; i++) for (let j = i + 1; j < geoms.length; j++) {
+      const A = geoms[i], B = geoms[j];
+      if (A.lx + A.w + 2 > B.lx - B.w && A.lx - A.w - 2 < B.lx + B.w && A.ly + A.h + 2 > B.ly - B.h && A.ly - A.h - 2 < B.ly + B.h) {
+        A.lx += A.nx * 18; A.ly += A.ny * 18;
+        B.lx -= B.nx * 18; B.ly -= B.ny * 18;
+        moved = true;
+      }
+    }
+    for (const g of geoms) {
+      for (let step = 0; step < 3; step++) {
+        let hit = false;
+        for (const n of nodes) {
+          const pn = pos[n.id];
+          if (!pn) continue;
+          const lbn = labelBox[n.id];
+          if (lbn && g.lx + g.w > lbn.x && g.lx - g.w < lbn.x + lbn.w && g.ly + g.h > lbn.y && g.ly - g.h < lbn.y + lbn.h) { hit = true; break; }
+        }
+        if (!hit) break;
+        g.lx += g.dirx * 16; g.ly += g.diry * 16;
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  for (const e of visibleEdges) {
+    const g = edgeGeom.get(e.id);
+    if (!g) continue;
+    const provId = e.relationship_id || e.fact_id || e.event_id || "";
+    const provKind = e.provenance_kind || "relationship";
+    // Direct vs indirect visual language (REQ 7-9): an edge that touches
+    // the CENTER is a DIRECT relationship (solid); any other edge is an
+    // INDIRECT relationship (dashed) — it connects two entities but never
+    // implies a direct link to the center. Backend DERIVED edges are
+    // always dashed. Candidates never reach the trusted graph.
+    const derived = String(e.classification || "").toUpperCase() === "DERIVED";
+    const touchCenter = e.source === center.id || e.target === center.id;
+    const indirect = derived || (directness && !touchCenter);
+    const dashed = indirect ? " stroke-dasharray=\"6,4\"" : "";
+    // Selection highlights the path from the center to the chosen node;
+    // filter highlighting is a VIEW operation — non-matching items are
+    // faded but never removed from the graph (REQ 15, 28-29).
+    const selPath = selActive && selEdges && selEdges.has(e.id);
+    const eDim = (filterActive && activeEdges && !activeEdges.has(e.id)) || (selActive && !selPath);
+    const eOp = eDim ? "opacity=\"0.22\"" : "";
+    const eStroke = selPath ? "#8fd8a8" : (filterActive && activeEdges && activeEdges.has(e.id)) ? "#9fb7ff" : "#55608a";
+    const eW = selPath ? 3 : (eDim ? 1.2 : 2);
+    svg += `<g class="g-edge" ${eOp} onclick="explainEdge('${esc(provKind)}','${esc(provId)}')">
+      <title>${esc(nameById[e.source] || e.source)} — ${esc(e.relationship_type)} → ${esc(nameById[e.target] || e.target)}</title>
+      <path d="${g.path}" fill="none" stroke="${eStroke}" stroke-width="${eW}" marker-end="url(#garrow)"${dashed}/>
+      <text class="edge-label" x="${g.lx}" y="${g.ly}" text-anchor="middle"${eDim ? " opacity=\"0.3\"" : ""}>${esc(e.relationship_type)}</text>
+    </g>`;
+  }
+  const edgeIds = new Set(visibleEdges.flatMap((e) => [e.source, e.target]));
   for (const n of nodes) {
     const p = pos[n.id];
     if (!p) continue;
     const isCenter = n.id === center.id;
-    const r = isCenter ? 20 : 15;
+    const r = isCenter ? GRAPH_CASE_R : GRAPH_NODE_R;
     const refId = n.entity_id || n.event_id || n.case_id || "";
-    svg += `<g onclick="openNodePanel('${n.node_kind}','${esc(refId)}')" style="cursor:pointer">
-      <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${nodeColor(n.type)}" stroke="${isCenter ? "#ffffff" : "#0b0e17"}" stroke-width="${isCenter ? 2.5 : 1.5}"/>
-      <text x="${p.x}" y="${p.y + r + 13}" font-size="10" fill="#dbe2f4" text-anchor="middle">${esc(trunc(n.name, 24))}</text>
+    // Structured semantics distinguish a CONTEXTUAL mention from a
+    // mentioned-only entity with no relationships in view — never
+    // implying involvement. Events/cases carry no investigative status.
+    const ist = String(n.investigative_status || "").toUpperCase();
+    const mctx = String(n.mention_context || "").toUpperCase();
+    const isContextual = ist === "CONTEXTUAL" || mctx === "CONTEXTUAL";
+    const isMentionOnly = n.node_kind === "entity" && !edgeIds.has(n.id) && ist === "MENTIONED_ONLY";
+    const isIsolated = isoIds.has(n.id) && !isCenter;
+    // The center entity is visually distinct: larger node, accent halo,
+    // CENTER badge and its full name (never truncated).
+    const halo = isCenter ? `<circle cx="${p.x}" cy="${p.y}" r="${r + 7}" fill="none" stroke="var(--accent, #5b8cff)" stroke-width="1.6" stroke-dasharray="4,3" opacity="0.85"/>` : "";
+    // Selection: nodes on the path center → selected node get a green halo;
+    // everything off the path is faded but stays visible (REQ 28-29).
+    const onSelPath = selActive && selNodes && (selNodes.has(n.id) || isCenter);
+    const selHalo = (onSelPath && !isCenter) ? `<circle cx="${p.x}" cy="${p.y}" r="${r + 4}" fill="none" stroke="#8fd8a8" stroke-width="1.6" opacity="0.95"/>` : "";
+    // Full-name labels (REQ 4): names wrap into up to two readable lines,
+    // never truncated, and sit OUTWARD from their ring — never across the
+    // node circle, never over another node.
+    const d = dims[n.id] || { lines: [String(n.name || "(unnamed)")], w: 30, h: 20 };
+    const meta = labelMeta[n.id] || { cx: p.x, base: p.y + r + 8, anchor: "middle", dir: 1 };
+    const labelTxt = d.lines.map((ln, i) => `<tspan x="${meta.cx}" dy="${i === 0 ? 0 : GRAPH_LINE_H}">${esc(ln)}</tspan>`).join("");
+    // CENTER badge sits above the root label; CTX/MENTION/MATCH badges
+    // stack beyond the label, outward from the ring (REQ 27/35).
+    const lb = labelBox[n.id];
+    const bdir = (lb && lb.dir) || 1;
+    let badgeY = lb ? (bdir > 0 ? lb.y + lb.h + 7 : lb.y - 12) : p.y + r + 8;
+    const bstep = bdir > 0 ? 13 : -13;
+    const centerBadge = isCenter ? `<text x="${p.x}" y="${badgeY}" font-size="9" font-weight="700" fill="var(--accent2, #8fb3ff)" text-anchor="middle" letter-spacing="1.4">CENTER</text>` : "";
+    if (centerBadge) badgeY += bstep;
+    const ctxBadge = isContextual ? `<text x="${p.x}" y="${badgeY}" font-size="9" font-weight="700" fill="#d8b26a" text-anchor="middle" letter-spacing="1.2">CTX</text>` : "";
+    if (ctxBadge) badgeY += bstep;
+    const mentBadge = (!isContextual && isMentionOnly) ? `<text x="${p.x}" y="${badgeY}" font-size="9" font-weight="700" fill="#7f8db0" text-anchor="middle" letter-spacing="1.2">MENTION</text>` : "";
+    if (mentBadge) badgeY += bstep;
+    // Filter highlighting is a VIEW operation: non-matching nodes are
+    // faded but remain visible/clickable; matching nodes get an accent
+    // ring + MATCH badge (REQ 15/16/42 — never only color).
+    const nDim = (filterActive && activeNodes && !activeNodes.has(n.id)) || (selActive && !onSelPath);
+    const nMatch = filterActive && activeNodes && activeNodes.has(n.id);
+    const matchHalo = nMatch ? `<circle cx="${p.x}" cy="${p.y}" r="${r + 4}" fill="none" stroke="#9fb7ff" stroke-width="1.4" opacity="0.9"/>` : "";
+    const matchBadge = nMatch ? `<text x="${p.x}" y="${badgeY}" font-size="8" font-weight="700" fill="#9fb7ff" text-anchor="middle" letter-spacing="1.1">MATCH</text>` : "";
+    const strokeColor = isCenter ? "#ffffff" : isContextual ? "#d8b26a" : isMentionOnly ? "#7f8db0" : "#0b0e17";
+    // Unconnected / contextual / mentioned-only nodes share a dashed ring:
+    // they are documented mentions, never investigative subjects (REQ 14).
+    const strokeDash = (!isCenter && (isContextual || isMentionOnly || isIsolated)) ? " stroke-dasharray=\"5,3\"" : "";
+    const nOpacity = nDim ? "opacity=\"0.25\"" : (isIsolated && !isContextual && !isMentionOnly) ? "opacity=\"0.72\"" : "";
+    const tip = [n.name || "(unnamed)", "Type: " + (n.type || "OTHER")];
+    if (n.investigative_status) tip.push("Status: " + n.investigative_status);
+    if (n.role) tip.push("Role: " + n.role);
+    // In case mode the click also selects the node (highlights the path
+    // from the center) and then opens the details drawer.
+    const click = selectable
+      ? `selectNetNode('${esc(n.id)}','${esc(refId)}');openNodePanel('${n.node_kind}','${esc(refId)}','${esc(n.name)}','${esc(n.type)}')`
+      : `openNodePanel('${n.node_kind}','${esc(refId)}','${esc(n.name)}','${esc(n.type)}')`;
+    svg += `<g onclick="${click}" style="cursor:pointer" ${nOpacity}>
+      <title>${esc(tip.join("\n"))}</title>
+      ${halo}
+      ${selHalo}
+      ${matchHalo}
+      ${centerBadge}
+      <circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${nodeColor(n.type)}" stroke="${strokeColor}" stroke-width="${isCenter ? 3 : onSelPath ? 2.4 : nMatch ? 2.4 : 1.8}"${strokeDash}/>
+      <text x="${meta.cx}" y="${meta.base}" font-size="16" font-weight="600" fill="#dbe2f4" text-anchor="${meta.anchor}">${labelTxt}</text>
+      ${ctxBadge}
+      ${mentBadge}
+      ${matchBadge}
     </g>`;
   }
+  // CAMERA (REQ 6-8, 31-37): the svg fills its panel exactly and the
+  // viewBox IS the camera — no giant canvas, no scrollbars, no microscopic
+  // text. scale 1 = whole graph fits; the default never renders below
+  // MIN_READ, so the investigator pans/zooms the camera for large graphs
+  // instead of the browser shrinking everything (REQ 7/8).
+  const b = LAYER_BOUNDS;
+  const pad = 80;
+  const vbX = b.minX - pad, vbY = b.minY - pad;
+  const vbW = b.maxX - b.minX + 2 * pad, vbH = b.maxY - b.minY + 2 * pad;
   svg += "</svg>";
-  el.innerHTML = svg + `<div class="legend">${Object.keys(NODE_COLORS).map((t) => `<span style="color:${NODE_COLORS[t]}">${t}</span>`).join("")}<span style="color:#55608a">——— direct</span><span style="color:#55608a">— — — derived</span></div>`;
-  lastGraphContainer = containerId;
+  // The legend lives OUTSIDE the graph panel (a sibling) so the svg always
+  // fills the full panel height — nothing is squeezed or clipped.
+  el.innerHTML = svg;
+  const legendId = "legend-" + containerId;
+  const oldLegend = document.getElementById(legendId);
+  if (oldLegend) oldLegend.remove();
+  const legendDiv = document.createElement("div");
+  legendDiv.id = legendId;
+  legendDiv.className = "legend";
+  legendDiv.innerHTML = `${Object.keys(NODE_COLORS).map((t) => `<span style="color:${NODE_COLORS[t]}">${t}</span>`).join("")}<span style="color:#55608a">——— direct</span><span style="color:#55608a">— — — indirect</span><span style="color:#8fd8a8">◎ selected path</span><span style="color:#d8b26a">◌ contextual</span><span style="color:#7f8db0">○ mentioned only</span><span style="color:#9fb7ff">◎ center</span>`;
+  el.insertAdjacentElement("afterend", legendDiv);
+  const svgEl = el.querySelector("svg");
+  const wrapEl = el.closest(".graph-wrap") || el.parentElement;
+  const wrapW = wrapEl.clientWidth || 600, wrapH = wrapEl.clientHeight || 400;
+  const fit = Math.min(wrapW / vbW, wrapH / vbH);
+  const MIN_READ = 0.9; // never render below ~90% of the design sizes above
+  const s = (isMini || (opts && opts.forceFit)) ? fit : Math.max(fit, MIN_READ);
+  // Default view frames the WHOLE graph (bounds centre) — the case root
+  // sits at the top of the layout. Only an explicit non-case center (the
+  // entity-centred investigator tool) moves the camera.
+  let cx = vbX + vbW / 2, cy = vbY + vbH / 2;
+  if (!(opts && opts.forceFit) && !isMini && opts && opts.center && opts.center.id && pos[opts.center.id] && opts.center.kind !== "case" && opts.center.type !== "CASE") {
+    cx = pos[opts.center.id].x; cy = pos[opts.center.id].y;
+  }
+  graphView = { s, cx, cy };
+  if (svgEl) svgEl.setAttribute("viewBox", `${vbX} ${vbY} ${Math.max(60, vbW)} ${Math.max(60, vbH)}`);
+  // Only the main graph pane owns the toolbar zoom/pan target — secondary
+  // graphs (e.g. location network) never hijack it.
+  if (!isMini) lastGraphContainer = containerId;
   setupGraphInteractions(containerId);
+  applyGraphTransform(containerId);
 }
 
-/* ---------- graph zoom / pan / interactions ---------- */
+/* ---------- graph camera: zoom / pan / fit (REQ 17-19, 31-37) ---------- */
+// The svg always fills its panel; the camera (viewBox) chooses what is
+// visible. scale 1 = whole graph fits; the readable default never renders
+// below MIN_READ, so panning is the escape hatch for large graphs — never
+// microscopic text (REQ 7/8). No CSS transforms, no scrollbars (REQ 32-33).
 function applyGraphTransform(containerId) {
   const wrap = document.getElementById(containerId);
   if (!wrap) return;
   const svg = wrap.querySelector("svg");
-  if (!svg) return;
-  svg.style.transformOrigin = "0 0";
-  svg.style.transform = `translate(${graphView.tx}px, ${graphView.ty}px) scale(${graphView.scale})`;
+  if (!svg || !graphView) return;
+  const s = graphView.s || 1;
+  const wrapW = wrap.clientWidth || 600, wrapH = wrap.clientHeight || 400;
+  const vbW = wrapW / s, vbH = wrapH / s;
+  svg.setAttribute("viewBox", `${(graphView.cx - vbW / 2).toFixed(2)} ${(graphView.cy - vbH / 2).toFixed(2)} ${vbW.toFixed(2)} ${vbH.toFixed(2)}`);
 }
 function graphZoom(dir) {
-  graphView.scale = Math.min(3, Math.max(0.4, graphView.scale * (dir > 0 ? 1.2 : 1 / 1.2)));
+  __userView = true;
+  graphView.s = Math.min(4, Math.max(0.25, graphView.s * (dir > 0 ? 1.25 : 1 / 1.25)));
   applyGraphTransform(lastGraphContainer);
 }
+// Fit-to-view (REQ 17/37): show the WHOLE graph — every node and every
+// label — inside the panel at the readable minimum scale (never shrink
+// below it). forceFit keeps the camera from re-defaulting.
+function graphFit() {
+  if (__lastGraph) renderGraphSVG(__lastGraph.data, __lastGraph.containerId, { ...__lastGraph.opts, forceFit: true });
+}
 function graphZoomReset() {
-  graphView = { scale: 1, tx: 0, ty: 0 };
-  applyGraphTransform(lastGraphContainer);
+  graphFit();
+}
+// Reset view (REQ 38): restore the default CASE-centered view, zoom and
+// pan — the selected case stays selected, the trusted graph is untouched.
+function graphResetView() {
+  if (window.__netCase && window.__netCaseData && window.__renderCaseGraph) {
+    window.__netCenter = { id: window.__netCaseData.center.id, name: window.__netCaseData.center.name, type: "CASE", kind: "case" };
+    const box = document.getElementById("netCurrentCenter");
+    if (box) {
+      document.getElementById("netCurrentCenterName").textContent = window.__netCenter.name || "";
+      document.getElementById("netCurrentCenterType").innerHTML = "Type: CASE";
+      box.style.display = "";
+    }
+    window.__renderCaseGraph();
+    return;
+  }
+  graphFit();
 }
 function setupGraphInteractions(containerId) {
   const wrap = document.getElementById(containerId);
   if (!wrap) return;
-  graphView = { scale: 1, tx: 0, ty: 0 };
   applyGraphTransform(containerId);
   wrap.onwheel = (e) => {
     e.preventDefault();
-    const f = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-    graphView.scale = Math.min(3, Math.max(0.4, graphView.scale * f));
+    __userView = true;
+    graphView.s = Math.min(4, Math.max(0.25, graphView.s * (e.deltaY < 0 ? 1.15 : 1 / 1.15)));
     applyGraphTransform(containerId);
   };
-  let drag = null;
-  const startDrag = (e) => {
-    const t = e.target && e.target.tagName;
-    // Drag on the canvas background only (svg element / wrapper); node and
-    // edge elements keep their click behaviour.
-    if (t === "svg" || (e.target === wrap)) {
-      drag = { x: e.clientX - graphView.tx, y: e.clientY - graphView.ty };
-      wrap.classList.add("dragging");
-    }
-  };
-  const moveDrag = (e) => {
-    if (!drag) return;
-    graphView.tx = e.clientX - drag.x;
-    graphView.ty = e.clientY - drag.y;
-    applyGraphTransform(containerId);
-  };
-  const endDrag = () => { drag = null; wrap.classList.remove("dragging"); };
-  wrap.addEventListener("mousedown", startDrag);
-  window.addEventListener("mousemove", moveDrag);
-  window.addEventListener("mouseup", endDrag);
+  if (!wrap.__dragHandlers) {
+    let drag = null;
+    const startDrag = (e) => {
+      const t = e.target && e.target.tagName;
+      // Drag on the canvas background only (svg element / wrapper); node
+      // and edge elements keep their click behaviour.
+      if (t === "svg" || (e.target === wrap)) {
+        drag = { x: e.clientX, y: e.clientY, cx: graphView.cx, cy: graphView.cy };
+        wrap.classList.add("dragging");
+      }
+    };
+    const moveDrag = (e) => {
+      if (!drag) return;
+      __userView = true;
+      graphView.cx = drag.cx - (e.clientX - drag.x) / graphView.s;
+      graphView.cy = drag.cy - (e.clientY - drag.y) / graphView.s;
+      applyGraphTransform(containerId);
+    };
+    const endDrag = () => { drag = null; wrap.classList.remove("dragging"); };
+    wrap.addEventListener("mousedown", startDrag);
+    window.addEventListener("mousemove", moveDrag);
+    window.addEventListener("mouseup", endDrag);
+    wrap.__dragHandlers = { startDrag, moveDrag, endDrag };
+  }
+  // Responsive graph (REQ 5): when the panel resizes (window, sidebar,
+  // accordions) and the user has not manually zoomed/panned, re-fit.
+  if (window.ResizeObserver && !wrap.__resizeObs) {
+    let t = null;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (!__userView && __lastGraph) {
+          renderGraphSVG(__lastGraph.data, __lastGraph.containerId, __lastGraph.opts);
+        }
+      }, 140);
+    });
+    ro.observe(wrap);
+    wrap.__resizeObs = ro;
+  }
 }
 function recenterGraph(nodeKind, nodeId) {
   if (!nodeId) return;
@@ -868,6 +1391,9 @@ async function loadNetworkTab(kind, id, hops, containerId, extra) {
   try {
     const data = await apiGet(graphUrlFor(kind, id, currentHops, extra));
     const paneId = containerId || "graphPane";
+    const centerName = (data.center && data.center.name) || (window.__netCenter && window.__netCenter.name) || "";
+    const centerType = (data.center && data.center.type) || (window.__netCenter && window.__netCenter.type) || "";
+    const graphHead = `<div class="net-graph-head"><span class="ttl">Network graph</span><span class="ctr">Centered on: <b>${esc(centerName)}</b>${centerType ? ` <span class="pill">${esc(centerType)}</span>` : ""}</span><span class="stt">${(data.nodes || []).length} connected entities · ${(data.edges || []).length} relationships</span></div>`;
     const bar = `<div class="hop-bar">
       <button class="${currentHops === 1 ? "active" : ""}" onclick="loadNetworkTab('${kind}','${esc(id)}',1,'${paneId}',${extra ? JSON.stringify(extra) : "null"})">1-hop</button>
       <button class="${currentHops === 2 ? "active" : ""}" onclick="loadNetworkTab('${kind}','${esc(id)}',2,'${paneId}',${extra ? JSON.stringify(extra) : "null"})">2-hop</button>
@@ -877,13 +1403,18 @@ async function loadNetworkTab(kind, id, hops, containerId, extra) {
       <span class="g-label">View</span>
       <button class="gbtn" onclick="graphZoom(1)" title="Zoom in" aria-label="Zoom in">+</button>
       <button class="gbtn" onclick="graphZoom(-1)" title="Zoom out" aria-label="Zoom out">−</button>
+      <button class="gbtn" onclick="graphFit()" title="Fit graph to panel" aria-label="Fit graph">⛶</button>
+      <button class="gbtn" onclick="graphResetView()" title="Reset view (case-centered)" aria-label="Reset view">↺</button>
       <button class="gbtn" onclick="graphZoomReset()" title="Reset zoom and position" aria-label="Reset zoom">⤢</button>
       <button class="gbtn" onclick="loadNetworkTab('${kind}','${esc(id)}',${currentHops === 1 ? 2 : 1},'${paneId}',${extra ? JSON.stringify(extra) : "null"})" title="${currentHops === 1 ? "Expand to 2-hop" : "Collapse to 1-hop"}">${currentHops === 1 ? "Expand" : "Collapse"}</button>
     </div>
     <div class="graph-wrap" id="${paneId}-svg"></div>
     <div class="hop-note mt">Click a node to inspect it · click a relationship edge for “Why am I seeing this?”. A 2-hop connection is never shown as a direct relationship.</div>`;
-    pane.innerHTML = bar;
+    pane.innerHTML = graphHead + bar;
     __graphRaw = data;
+    const relSel = document.getElementById("gfRelSelect");
+    const types = [...new Set((data.edges || []).map((e) => e.relationship_type).filter(Boolean))].sort();
+    relSel.innerHTML = '<option value="">All relationship types</option>' + types.map((t) => `<option>${esc(t)}</option>`).join("");
     renderGraphSVG(data, paneId + "-svg");
   } catch (err) {
     pane.innerHTML = errorState(err, "loadNetworkTab('" + kind + "','" + id + "'," + hops + ",'" + (containerId || "graphPane") + "')");
@@ -934,6 +1465,15 @@ async function openNodePanel(nodeKind, nodeId, nodeName, nodeType) {
     let html = "";
     const bm = await findBookmark(kind, nodeId);
     window.__drawerCtx.bookmark_id = bm ? bm.bookmark_id : null;
+    const docLine = async (documentId) => {
+      if (!documentId) return "";
+      try {
+        const d = await apiGet("/documents/" + documentId);
+        return `<div class="kv"><b>Source document:</b> ${esc(d.filename || d.document_id)}${d.publication_date ? ` <span class="muted small">· published ${esc(d.publication_date)}</span>` : ""}</div>`;
+      } catch (e) {
+        return `<div class="kv"><b>Source document:</b> <span class="mono">${esc(documentId)}</span></div>`;
+      }
+    };
     if (kind === "entity") {
       const [entity, history] = await Promise.all([
         apiGet("/entities/" + nodeId).catch(() => null),
@@ -941,9 +1481,29 @@ async function openNodePanel(nodeKind, nodeId, nodeName, nodeType) {
       ]);
       const h = history || {};
       html = `<div class="kv"><b>Status:</b> ${esc((entity && entity.status) || (h.entity || {}).status || "—")}</div>
-        <div class="kv"><b>Entity id:</b> <span class="mono">${esc(nodeId)}</span></div>
-        ${(h.entity && h.entity.aliases && h.entity.aliases.length) ? `<div class="kv"><b>Aliases:</b> ${esc(h.entity.aliases.join(", "))}</div>` : ""}
-        <div class="drawer-actions">
+        <div class="kv"><b>Entity id:</b> <span class="mono">${esc(nodeId)}</span></div>`;
+      // Structured-source semantics preserved on the trusted record: a
+      // CONTEXTUAL / MENTIONED_ONLY person is a documented mention, never
+      // an investigative subject — the evidence block stays visible.
+      const sm = (entity && entity.structured_metadata) || {};
+      if (sm.investigative_status) {
+        html += `<div class="kv"><b>Investigative status:</b> ${esc(sm.investigative_status)}` +
+          (sm.investigative_status === "CONTEXTUAL" ? ` <span class="muted small">— contextual mention, not an investigative subject</span>` : "") +
+          (sm.investigative_status === "MENTIONED_ONLY" ? ` <span class="muted small">— mentioned in source; no documented investigative status</span>` : "") +
+          `</div>`;
+      }
+      if (sm.role) html += `<div class="kv"><b>Role:</b> ${esc(sm.role)}</div>`;
+      if (sm.mention_context) html += `<div class="kv"><b>Mention context:</b> ${esc(sm.mention_context)}</div>`;
+      if (sm.status) html += `<div class="kv"><b>Source status:</b> ${esc(sm.status)}</div>`;
+      if (sm.description) html += `<div class="kv"><b>Description:</b> ${esc(sm.description)}</div>`;
+      if (sm.quantity) html += `<div class="kv"><b>Quantity:</b> ${esc(sm.quantity)}</div>`;
+      if (sm.value) html += `<div class="kv"><b>Value:</b> ${esc(sm.value)}</div>`;
+      if (sm.registration) html += `<div class="kv"><b>Registration:</b> ${esc(sm.registration)}</div>`;
+      const dd = await docLine(entity && entity.document_id);
+      if (dd) html += dd;
+      if (sm.evidence_snippet) html += `<div class="drawer-section-title">Evidence</div><div class="evidence">“${esc(sm.evidence_snippet)}”</div>`;
+      html += (h.entity && h.entity.aliases && h.entity.aliases.length) ? `<div class="kv"><b>Aliases:</b> ${esc(h.entity.aliases.join(", "))}</div>` : "";
+      html += `<div class="drawer-actions">
           <button class="btn sm" onclick="navigate('#/entities/${nodeId}')">View History</button>
           <button class="btn sm" onclick="recenterGraph('entity','${nodeId}')">Expand Network</button>
           <button class="btn sm" onclick="navigate('#/entities/${nodeId}')">Open Page</button>
@@ -962,24 +1522,47 @@ async function openNodePanel(nodeKind, nodeId, nodeName, nodeType) {
         ((h.sources || []).length ? h.sources.slice(0, 5).map((s) => `<div class="kv">${esc(s.publisher || s.source_id)}</div>`).join("") : '<div class="muted small">No sources referenced.</div>');
     } else if (kind === "event") {
       const ev = await apiGet("/events/" + nodeId);
+      const sm = ev.structured_metadata || {};
+      const dd = await docLine(ev.document_id);
       html = `<div class="kv"><b>Type:</b> ${esc(ev.event_type)}</div>
-        <div class="kv"><b>Date:</b> ${ev.start_date ? esc(ev.start_date) + (ev.end_date ? " → " + esc(ev.end_date) : "") : "Unknown"} <span class="pill">${esc(ev.date_precision || "UNKNOWN")}</span></div>
-        ${ev.case_id ? `<div class="kv"><b>Case:</b> linked to a trusted case</div>` : ""}
-        <div class="drawer-actions">
+        <div class="kv"><b>Date:</b> ${ev.start_date ? esc(ev.start_date) + (ev.end_date ? " → " + esc(ev.end_date) : "") : "Not provided"} <span class="pill">${esc(ev.date_precision || "UNKNOWN")}</span></div>
+        <div class="kv"><b>Time:</b> ${ev.event_time ? esc(ev.event_time) : "Not provided"}</div>
+        ${sm.status ? `<div class="kv"><b>Status:</b> ${esc(sm.status)}</div>` : ""}
+        ${sm.duration ? `<div class="kv"><b>Duration:</b> ${esc(sm.duration)}</div>` : ""}
+        ${sm.organization ? `<div class="kv"><b>Organization:</b> ${esc(sm.organization)}</div>` : ""}
+        ${sm.drug ? `<div class="kv"><b>Drug:</b> ${esc(sm.drug)}</div>` : ""}
+        ${sm.vehicle ? `<div class="kv"><b>Vehicle:</b> ${esc(sm.vehicle)}</div>` : ""}
+        ${ev.description ? `<div class="kv"><b>Description:</b> ${esc(ev.description)}</div>` : ""}`;
+      if (dd) html += dd;
+      if (sm.evidence_snippet) html += `<div class="drawer-section-title">Evidence</div><div class="evidence">“${esc(sm.evidence_snippet)}”</div>`;
+      html += `<div class="drawer-actions">
           <button class="btn sm" onclick="navigate('#/events/${nodeId}')">Open Event</button>
           <button class="btn sm" onclick="recenterGraph('event','${nodeId}')">Expand Network</button>
         </div>`;
     } else if (kind === "case") {
       const cs = await apiGet("/cases/" + nodeId);
       html = `<div class="kv"><b>Number:</b> <span class="mono">${esc(cs.official_case_number || "—")}</span></div>
-        <div class="kv"><b>Jurisdiction:</b> ${esc(cs.jurisdiction || "—")} · <b>Status:</b> ${esc(cs.status)}</div>
-        <div class="kv"><b>Dates:</b> ${fmtDate(cs.start_date)} → ${fmtDate(cs.end_date)}</div>
+        <div class="kv"><b>Type:</b> ${esc(cs.category || "—")} · <b>Status:</b> ${esc(cs.status)}</div>
+        <div class="kv"><b>Jurisdiction:</b> ${esc(cs.jurisdiction || "—")}</div>
+        ${cs.description ? `<div class="kv"><b>Description:</b> ${esc(cs.description)}</div>` : ""}
         <div class="drawer-actions">
           <button class="btn sm" onclick="navigate('#/cases/${nodeId}')">Open Case</button>
           <button class="btn sm" onclick="recenterGraph('case','${nodeId}')">Expand Network</button>
         </div>`;
     } else {
       html = `<div class="kv">${esc(name)}</div>`;
+    }
+    // Connection to the current center (REQ 12): when the selected node is
+    // reachable from the graph center, show the real trusted path with its
+    // relationship types — direct when one hop, indirect otherwise.
+    if (window.__netSel && window.__netSel.refId === nodeId && window.__netSelPath && window.__netSelPath.path.length > 1) {
+      const pth = window.__netSelPath.path;
+      const egs = window.__netSelPath.edgePath || [];
+      const direct = pth.length === 2;
+      html = `<div class="drawer-section-title">Connection to current center</div>
+        <div class="kv">${direct ? "Direct connection to the center." : "Indirect connection — reachable from the center through trusted relationships:"}</div>
+        <div class="evidence">${pth.map((n2, i) => `${i ? " <span style='opacity:.6'>→</span> " : ""}<b>${esc(n2.name)}</b>`).join("")}</div>` +
+        (egs.length ? `<div class="kv mt">${egs.map((e, i) => `${i ? " · " : ""}<b>${esc(e.type)}</b>`).join("")}</div>` : "") + html;
     }
     html += `<div class="drawer-section-title">Bookmark</div>
       <button class="btn ${bm ? "warn" : "ok"} sm" onclick="toggleBookmark()">${bm ? "Remove bookmark" : "Add bookmark"}</button>`;
@@ -998,8 +1581,21 @@ async function explainEdge(provKind, provId) {
     const rel = p.relationship || p.fact || null;
     let html = `<div class="drawer-section-title">Relationship</div>
       <div class="kv"><b>Type:</b> ${esc(p.relationship_type || "—")}</div>
+      ${rel && rel.relationship_id ? `<div class="kv"><b>Relationship id:</b> <span class="mono">${esc(rel.relationship_id)}</span></div>` : ""}
+      <div class="kv"><b>Source:</b> ${esc(p.source_name || "—")}${p.source_type ? ` <span class="pill">${esc(p.source_type)}</span>` : ""}</div>
+      <div class="kv"><b>Target:</b> ${esc(p.target_name || "—")}${p.target_type ? ` <span class="pill">${esc(p.target_type)}</span>` : ""}</div>
       ${rel ? `<div class="kv"><b>Status:</b> ${esc(rel.status || "—")}</div>` : ""}
       <div class="kv"><b>Classification:</b> ${esc(p.classification || "—")}</div>`;
+    // Direct vs indirect relative to the graph center (REQ 13) — computed
+    // from the live case graph, never fabricated.
+    if (window.__netCaseData && window.__netCenter) {
+      const cid = window.__netCenter.id;
+      const rel2 = (window.__netCaseData.edges || []).find((e) => e.relationship_id === provId || e.fact_id === provId || e.event_id === provId);
+      if (rel2) {
+        const touch = rel2.source === cid || rel2.target === cid;
+        html += `<div class="kv"><b>Relative to center:</b> ${touch ? "Direct — connected to " + esc(window.__netCenter.name) : "Indirect — does not touch the center directly"}</div>`;
+      }
+    }
     if (p.case) html += `<div class="drawer-section-title">Case</div><div class="kv">${esc(p.case.official_case_number || p.case.case_name || "—")}</div>`;
     if (p.event) html += `<div class="drawer-section-title">Event</div><div class="kv">${esc(p.event.title || "—")}${p.event.date_precision ? ` <span class="pill">${esc(p.event.date_precision)}</span>` : ""}${p.event.start_date ? " · " + esc(p.event.start_date) : ""}</div>`;
     if (rel && rel.confidence != null) html += `<div class="drawer-section-title">Confidence</div><div class="kv">${esc(String(rel.confidence))} — extraction/matching confidence, not a probability of guilt.</div>`;
@@ -1652,7 +2248,37 @@ async function loadLocationTab(tab, id, loc, h) {
 /* ---------- 9.8 Network Explorer ---------- */
 async function pageNetwork(container) {
   container.innerHTML = pageHead("Network Explorer", "Trusted knowledge graph — confirmed records only") +
-  `<div class="grid3 mb">
+  `<div class="panel mb"><h2>Case graph</h2>
+    <div class="row">
+      <select id="netCaseSelect" style="max-width:360px" aria-label="Select a case"></select>
+      <button class="btn primary sm" id="netCaseOpen">Open case graph</button>
+      <button class="btn ghost sm" id="netCaseCenterReset" title="Return the view to the case root">Clear center</button>
+    </div>
+    <div class="muted small mt">A structured document represents one case. Open a case to see its COMPLETE trusted graph — every entity, event and confirmed relationship, including isolated/mentioned-only entities. No filter is active by default.</div>
+    <div id="netCaseInfo" class="mt"></div>
+  </div>
+  <div class="panel mb"><h2>Graph view</h2>
+  <div class="row" id="graphFilterBar" style="margin-bottom:8px">
+    <select id="gfEntityType" style="max-width:180px"><option value="">All entity types</option><option>PERSON</option><option>ORGANIZATION</option><option>AGENCY</option><option>LOCATION</option><option>DRUG</option><option>VEHICLE</option><option>EVENT</option><option>CASE</option></select>
+    <select id="gfStatus" style="max-width:180px"><option value="">All statuses</option><option>ACCUSED</option><option>ARRESTED</option><option>CONVICTED</option><option>CONTEXTUAL</option><option>MENTIONED_ONLY</option></select>
+    <select id="gfRelSelect" style="max-width:230px"><option value="">All relationship types</option></select>
+    <input id="gfCaseId" placeholder="Case id (optional filter)" style="max-width:200px">
+    <input id="gfSearch" placeholder="Search within graph" style="max-width:180px" aria-label="Search within graph">
+    <button class="btn primary sm" id="gfApply">Apply filters</button>
+    <button class="btn ghost sm" id="gfReset">Clear filters</button>
+    <button class="btn ghost sm" id="netReset">Clear graph</button>
+  </div>
+  <div id="gfBanner" style="display:none;margin-bottom:8px"></div>
+  <div class="muted small mb">Case mode: filters HIGHLIGHT the full case graph (a view operation — trusted data is never modified). Entity mode: filters run on the backend trusted-graph endpoints — candidate data never enters.</div>
+  <div id="graphPane">${emptyState("◉", "Select a case to explore its network — the complete case graph opens by default.")}</div></div>
+  <div class="grid3 mb">
+    <div class="panel"><h2>Graph statistics</h2>
+      <div class="scope-toggle mb">
+        <label><input type="radio" name="anaScope" value="case" checked> Current case</label>
+        <label><input type="radio" name="anaScope" value="global"> Entire database</label>
+      </div>
+      <div id="netStats"><span class="muted small">Select a case to see its scoped statistics.</span></div>
+    </div>
     <div class="panel"><h2>Entity center</h2>
       <input id="netEntityQ" placeholder="Search an entity, then pick one" list="netEntityList">
       <datalist id="netEntityList"></datalist>
@@ -1660,8 +2286,12 @@ async function pageNetwork(container) {
       <div class="mt"><div class="row">
         <button class="btn primary sm" id="netCenterBtn" disabled>Center graph</button>
       </div></div>
+      <div class="net-center" id="netCurrentCenter" style="display:none">
+        <div class="lbl">Current center</div>
+        <div class="nm" id="netCurrentCenterName"></div>
+        <div class="tp" id="netCurrentCenterType"></div>
+      </div>
     </div>
-    <div class="panel"><h2>Graph statistics</h2><div id="netStats">${loadingState()}</div></div>
     <div class="panel"><h2>Shortest path</h2>
       <label>From (entity id)</label><input id="pathA" placeholder="paste entity id">
       <label>To (entity id)</label><input id="pathB" placeholder="paste entity id">
@@ -1669,20 +2299,21 @@ async function pageNetwork(container) {
       <div id="pathOut" class="mt"></div>
     </div>
   </div>
-  <div class="panel"><h2>Connected components</h2><div id="netComponents">${loadingState()}</div></div>
-  <div class="panel"><h2>Network clusters</h2><div id="netClusters">${loadingState()}</div></div>
-  <div class="panel"><h2>Graph view</h2>
-  <div class="row" id="graphFilterBar" style="margin-bottom:8px">
-    <select id="gfEntityType" style="max-width:180px"><option value="">All entity types</option><option>PERSON</option><option>ORGANIZATION</option><option>AGENCY</option><option>LOCATION</option><option>EVENT</option><option>CASE</option></select>
-    <input id="gfRelType" placeholder="Relationship type (e.g. ARRESTED_IN)" style="max-width:240px">
-    <input id="gfCaseId" placeholder="Case id (optional filter)" style="max-width:220px">
-    <input id="gfSearch" placeholder="Search within graph" style="max-width:190px" aria-label="Search within graph">
-    <button class="btn primary sm" id="gfApply">Apply filters</button>
-    <button class="btn ghost sm" id="gfReset">Reset</button>
-    <button class="btn ghost sm" id="netReset">Clear graph</button>
+  <div class="acc">
+    <button class="acc-head" id="accNetClusters" data-body="accNetClustersBody" data-load="loadNetClustersTab" aria-expanded="false" aria-controls="accNetClustersBody"><span>Network clusters</span><span class="acc-arrow" aria-hidden="true">▶</span></button>
+    <div class="acc-body" id="accNetClustersBody" hidden><div id="netClusters"></div></div>
   </div>
-  <div class="muted small mb">Filters run on the backend trusted-graph endpoints — candidate data never enters.</div>
-  <div id="graphPane">${emptyState("◉", "Select an entity above to center the trusted graph.")}</div></div>`;
+  <div class="acc">
+    <button class="acc-head" id="accNetComponents" data-body="accNetComponentsBody" data-load="loadNetComponentsTab" aria-expanded="false" aria-controls="accNetComponentsBody"><span>Connected components</span><span class="acc-arrow" aria-hidden="true">▶</span></button>
+    <div class="acc-body" id="accNetComponentsBody" hidden><div id="netComponents"></div></div>
+  </div>
+  <div class="acc">
+    <button class="acc-head" id="accNetLocations" data-body="accNetLocationsBody" data-load="loadNetLocationsTab" aria-expanded="false" aria-controls="accNetLocationsBody"><span>Location network</span><span class="acc-arrow" aria-hidden="true">▶</span></button>
+    <div class="acc-body" id="accNetLocationsBody" hidden>
+      <div id="netLocations"></div>
+      <div class="acc-note">Location Network is trusted data only — explicit location relationships and events with an explicit location link. Proximity / same-city / same-district edges are never inferred.</div>
+    </div>
+  </div>`;
 
   // entity picker
   const qInput = document.getElementById("netEntityQ");
@@ -1701,79 +2332,557 @@ async function pageNetwork(container) {
         for (const e of data.entities || []) rows.push(e);
         for (const p of data.people || []) if (!rows.some((r) => r.entity_id === p.entity_id)) rows.push(p);
         for (const o of data.organizations || []) if (!rows.some((r) => r.entity_id === o.entity_id)) rows.push(o);
-        box.innerHTML = rows.map((e) => `<button class="sr" onclick="pickNetEntity('${e.entity_id}','${esc(e.canonical_name)}')"><div><div class="name">${esc(e.canonical_name)}</div><div class="sub">${esc(e.entity_type)}</div></div></button>`).join("") || '<span class="muted small">No entities found.</span>';
+        box.innerHTML = rows.map((e) => `<button class="sr" onclick="pickNetEntity('${e.entity_id}','${esc(e.canonical_name)}','${esc(e.entity_type || "")}','${esc(e.investigative_status || "")}')"><div><div class="name">${esc(e.canonical_name)}</div><div class="sub">${esc(e.entity_type)}${e.investigative_status ? ` · ${esc(e.investigative_status)}` : ""}</div></div></button>`).join("") || '<span class="muted small">No entities found.</span>';
       } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
     }, 250);
   });
-  window.pickNetEntity = (eid, name) => {
-    pickedEntity = { id: eid, name };
+  window.pickNetEntity = (eid, name, etype, istatus) => {
+    pickedEntity = { id: eid, name, type: etype || "", istatus: istatus || "" };
     qInput.value = name;
     document.getElementById("netEntityResults").innerHTML = "";
     document.getElementById("netCenterBtn").disabled = false;
   };
+  function renderCurrentCenter() {
+    const box = document.getElementById("netCurrentCenter");
+    if (!window.__netCenter) { box.style.display = "none"; return; }
+    const inCase = !!(window.__netCase && window.__netCaseData);
+    document.getElementById("netCurrentCenterName").textContent = window.__netCenter.name || "";
+    document.getElementById("netCurrentCenterType").innerHTML = (window.__netCenter.type ? `Type: ${esc(window.__netCenter.type)}` : "") +
+      (inCase && window.__netCenter.kind !== "case" ? ` <span class="muted small">· case root: ${esc(window.__netCase.name)}</span>` : "");
+    box.style.display = "";
+  }
   document.getElementById("netCenterBtn").addEventListener("click", () => {
-    if (pickedEntity) {
-      window.__netCenter = pickedEntity;
+    if (!pickedEntity) return;
+    window.__netCenter = pickedEntity;
+    renderCurrentCenter();
+    if (window.__netCase) {
+      // Centering is a CAMERA/Layout operation in case mode — the trusted
+      // case graph and the CASE identity remain unchanged (REQ 40).
+      renderCaseGraph();
+      toast("View centered on " + pickedEntity.name + " — case graph unchanged.", "ok");
+    } else {
       loadNetworkTab("entity", pickedEntity.id, 1, "graphPane");
     }
   });
 
-  // graph filters (forwarded to the trusted graph endpoints)
+  // graph filters — case mode HIGHLIGHTS the full case graph (a view
+  // operation; trusted data is never modified); entity mode forwards
+  // filters to the backend trusted-graph endpoints.
   document.getElementById("gfApply").addEventListener("click", () => {
+    if (window.__netCase) { applyCaseFilters(); return; }
     graphFilters.entity_type = document.getElementById("gfEntityType").value;
-    graphFilters.relationship_type = document.getElementById("gfRelType").value.trim();
+    graphFilters.relationship_type = document.getElementById("gfRelSelect").value;
     graphFilters.case_id = document.getElementById("gfCaseId").value.trim();
     if (window.__netCenter) loadNetworkTab("entity", window.__netCenter.id, currentHops, "graphPane");
     else toast("Center an entity first — filters apply to the centered graph.", "warn");
   });
   document.getElementById("gfReset").addEventListener("click", () => {
+    if (window.__netCase) { clearCaseFilters(); return; }
     graphFilters = { relationship_type: "", entity_type: "", case_id: "" };
     document.getElementById("gfEntityType").value = "";
-    document.getElementById("gfRelType").value = "";
+    document.getElementById("gfRelSelect").value = "";
     document.getElementById("gfCaseId").value = "";
+    document.getElementById("gfSearch").value = "";
     if (window.__netCenter) loadNetworkTab("entity", window.__netCenter.id, currentHops, "graphPane");
   });
   document.getElementById("netReset").addEventListener("click", () => {
+    window.__netCase = null;
+    window.__netCaseData = null;
     window.__netCenter = null;
+    window.__netFilters = {};
+    renderCurrentCenter();
+    hideFilterBanner();
     graphFilters = { relationship_type: "", entity_type: "", case_id: "" };
     document.getElementById("gfEntityType").value = "";
-    document.getElementById("gfRelType").value = "";
+    document.getElementById("gfStatus").value = "";
+    document.getElementById("gfRelSelect").value = "";
     document.getElementById("gfCaseId").value = "";
     document.getElementById("gfSearch").value = "";
-    document.getElementById("graphPane").innerHTML = emptyState("◉", "Graph cleared — select an entity to center it again.");
+    document.getElementById("netCaseInfo").innerHTML = "";
+    document.getElementById("graphPane").innerHTML = emptyState("◉", "Graph cleared — select a case or an entity to center the graph.");
+    if (window.__refreshScopedAnalytics) window.__refreshScopedAnalytics();
   });
-  document.getElementById("gfSearch").addEventListener("input", (e) => graphFilterByName(e.target.value.trim()));
+  document.getElementById("gfSearch").addEventListener("input", (e) => {
+    if (window.__netCase) applyCaseFilters();
+    else graphFilterByName(e.target.value.trim());
+  });
 
-  // stats
-  try {
-    const s = await apiGet("/graph/stats");
-    const byT = Object.entries(s.nodes_by_type || {}).map(([t, c]) => `<div class="kv"><b>${esc(t)}:</b> ${c}</div>`).join("");
-    document.getElementById("netStats").innerHTML =
-      `<div class="kv"><b>Total nodes:</b> ${s.total_nodes}</div><div class="kv"><b>Total edges:</b> ${s.total_edges}</div>` + (byT || '<span class="muted small">Empty trusted graph.</span>');
-  } catch (err) { document.getElementById("netStats").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  // ---------- case mode: full case-scoped graph (REQ 1, 3, 18, 21) ----------
+  async function populateCaseSelect() {
+    const sel = document.getElementById("netCaseSelect");
+    try {
+      const d = await apiGet("/cases" + qs({ limit: 200 }));
+      const items = d.items || [];
+      sel.innerHTML = '<option value="">— select a case —</option>' +
+        items.map((c) => `<option value="${c.case_id}">${esc(c.case_name || c.official_case_number || c.case_id)}</option>`).join("");
+      document.getElementById("netCaseOpen").disabled = !items.length;
+    } catch (err) {
+      sel.innerHTML = "<option value=\"\">Cases unavailable</option>";
+    }
+  }
+  async function loadCaseGraph(caseId) {
+    const pane = document.getElementById("graphPane");
+    pane.innerHTML = loadingState();
+    try {
+      const data = await apiGet("/graph/case/" + caseId + "/full");
+      window.__netCase = {
+        id: caseId,
+        name: (data.case && (data.case.case_name || data.case.official_case_number)) || "Case",
+        category: (data.case && data.case.category) || "",
+        status: (data.case && data.case.status) || "",
+      };
+      window.__netCaseData = data;
+      document.getElementById("gfStatus").disabled = false;
+      // The CASE is the logical root AND the default center (REQ 2, 20).
+      window.__netCenter = { id: data.center.id, name: data.center.name, type: "CASE", kind: "case" };
+      window.__netFilters = {};
+      // Relationship-type dropdown is populated from the ACTUAL case edges.
+      const relSel = document.getElementById("gfRelSelect");
+      const types = [...new Set((data.edges || []).map((e) => e.relationship_type).filter(Boolean))].sort();
+      relSel.innerHTML = '<option value="">All relationship types</option>' + types.map((t) => `<option>${esc(t)}</option>`).join("");
+      // Build the graph pane (tools + svg container) before rendering —
+      // renderGraphSVG silently returns when its container is missing.
+      const centerName = (data.center && data.center.name) || "";
+      pane.innerHTML =
+        `<div class="net-graph-head"><span class="ttl">Case graph</span><span class="ctr" id="netGraphCtr">Centered on: <b>${esc(centerName)}</b> <span class="pill">CASE</span></span><span class="stt" id="netGraphStats"></span></div>` +
+        `<div class="graph-tools">
+      <span class="g-label">View</span>
+      <button class="gbtn" onclick="graphZoom(1)" title="Zoom in" aria-label="Zoom in">+</button>
+      <button class="gbtn" onclick="graphZoom(-1)" title="Zoom out" aria-label="Zoom out">−</button>
+      <button class="gbtn" onclick="graphFit()" title="Fit graph to panel" aria-label="Fit graph">⛶</button>
+      <button class="gbtn" onclick="graphResetView()" title="Reset view (case-centered)" aria-label="Reset view">↺</button>
+      <button class="gbtn" onclick="graphZoomReset()" title="Reset zoom and position" aria-label="Reset zoom">⤢</button>
+      <span class="g-label">Sel</span>
+      <button class="gbtn" onclick="clearNetSelection()" title="Clear selected-node highlight" aria-label="Clear selection">✕</button>
+    </div>
+    <div class="net-viewbar">
+      <span class="g-label">Depth</span>
+      <button class="gbtn depth" data-d="1" onclick="setNetDepth(1)">1 hop</button>
+      <button class="gbtn depth" data-d="2" onclick="setNetDepth(2)">2 hops</button>
+      <button class="gbtn depth" data-d="3" onclick="setNetDepth(3)">3 hops</button>
+      <span class="g-label" style="margin-left:16px">Show</span>
+      <label class="viewchk" title="Edges that touch the center (direct relationships)"><input type="checkbox" id="netTglDirect" checked> Direct</label>
+      <label class="viewchk" title="Edges that do not touch the center (indirect relationships)"><input type="checkbox" id="netTglIndirect" checked> Indirect</label>
+      <label class="viewchk" title="Contextual / mentioned-only entities"><input type="checkbox" id="netTglContextual" checked> Contextual</label>
+    </div>
+    <div class="graph-wrap" id="graphPane-svg"></div>
+    <div class="hop-note mt">Click a node to inspect it — the path from the center to that node is highlighted. Click a relationship edge for “Why am I seeing this?”. Solid edges touch the center (direct); dashed edges are indirect. Isolated and contextual entities stay visible without invented edges.</div>`;
+      window.__netDepth = 2; // default depth: direct + one indirect layer (REQ 18)
+      window.__netToggles = { direct: true, indirect: true, contextual: true };
+      window.__netSel = null;
+      window.__netSelPath = null;
+      ["netTglDirect", "netTglIndirect", "netTglContextual"].forEach((tid) => {
+        const cb = document.getElementById(tid);
+        if (cb) cb.addEventListener("change", () => {
+          window.__netToggles = {
+            direct: document.getElementById("netTglDirect").checked,
+            indirect: document.getElementById("netTglIndirect").checked,
+            contextual: document.getElementById("netTglContextual").checked,
+          };
+          renderCaseGraph();
+        });
+      });
+      renderCaseGraph();
+      renderCurrentCenter();
+      document.getElementById("netCaseInfo").innerHTML =
+        `<div class="case-head"><div class="case-ttl">CASE GRAPH</div><div class="case-name">${esc(window.__netCase.name)}</div>` +
+        (window.__netCase.category ? `<div class="case-sub">${esc(window.__netCase.category)}${window.__netCase.status ? ` · ${esc(window.__netCase.status)}` : ""}</div>` : "") +
+        `<div class="case-counts">${data.entities_total} entities · ${data.relationships_total} relationships · ${data.events_total} events</div>` +
+        `<div class="muted small">CASE: ${esc(window.__netCase.name)} — the case is the graph's root/anchor; isolated and contextual entities stay visible without invented edges.</div></div>`;
+      // All analytics stay scoped to the selected case (REQ 12-14): stats
+      // and any expanded analytical sections refresh against case data.
+      if (window.__refreshScopedAnalytics) window.__refreshScopedAnalytics();
+    } catch (err) {
+      pane.innerHTML = errorState(err, "loadCaseGraph('" + caseId + "')");
+    }
+  }
+  function nodeStatusMatch(n, filter) {
+    if (!filter) return true;
+    const v = filter.toUpperCase();
+    const ist = String(n.investigative_status || "").toUpperCase();
+    const mctx = String(n.mention_context || "").toUpperCase();
+    const role = String(n.role || "").toUpperCase();
+    return ist === v || mctx === v || role === v;
+  }
+  function applyCaseFilters() {
+    const data = window.__netCaseData;
+    if (!data) return;
+    const f = { ...(window.__netFilters || {}) };
+    f.entityType = document.getElementById("gfEntityType").value;
+    f.status = document.getElementById("gfStatus").value;
+    f.relType = document.getElementById("gfRelSelect").value;
+    f.search = document.getElementById("gfSearch").value.trim();
+    window.__netFilters = f;
+    const hasFilter = !!(f.entityType || f.status || f.relType || f.search);
+    if (!hasFilter) { clearCaseFilters(); return; }
+    const activeNodes = new Set();
+    const activeEdges = new Set();
+    for (const n of data.nodes) {
+      let ok = true;
+      if (f.entityType && n.type !== f.entityType) ok = false;
+      if (f.status && !nodeStatusMatch(n, f.status)) ok = false;
+      if (f.search) {
+        const q = f.search.toLowerCase();
+        if (!String(n.name || "").toLowerCase().includes(q) && !String(n.role || "").toLowerCase().includes(q)) ok = false;
+      }
+      if (ok) activeNodes.add(n.id);
+    }
+    // A relationship-type filter highlights matching edges AND their
+    // endpoint nodes even if those nodes fail the type/status filters.
+    if (f.relType) {
+      for (const e of data.edges) {
+        if (e.relationship_type === f.relType) {
+          activeEdges.add(e.id);
+          activeNodes.add(e.source);
+          activeNodes.add(e.target);
+        }
+      }
+    } else if (f.entityType || f.status || f.search) {
+      for (const e of data.edges) {
+        if (activeNodes.has(e.source) && activeNodes.has(e.target)) activeEdges.add(e.id);
+      }
+    } else {
+      for (const e of data.edges) activeEdges.add(e.id);
+    }
+    window.__netActiveNodes = activeNodes;
+    window.__netActiveEdges = activeEdges;
+    const banner = document.getElementById("gfBanner");
+    banner.style.display = "";
+    banner.innerHTML = `<span class="filter-active">FILTER ACTIVE</span> <span class="muted">${[f.entityType ? "Entity Type: " + esc(f.entityType) : "", f.status ? "Status: " + esc(f.status) : "", f.relType ? "Relationship: " + esc(f.relType) : "", f.search ? "Search: “" + esc(f.search) + "”" : ""].filter(Boolean).join(" · ")}</span> <span class="muted">· ${activeNodes.size} matching node(s)</span> <button class="btn ghost sm" onclick="window.__clearCaseFilters()">Clear filters</button>`;
+    renderCaseGraph();
+  }
+  function hideFilterBanner() {
+    document.getElementById("gfBanner").style.display = "none";
+  }
+  function clearCaseFilters() {
+    window.__netFilters = {};
+    document.getElementById("gfEntityType").value = "";
+    document.getElementById("gfStatus").value = "";
+    document.getElementById("gfRelSelect").value = "";
+    document.getElementById("gfSearch").value = "";
+    hideFilterBanner();
+    renderCaseGraph();
+  }
+  window.__clearCaseFilters = clearCaseFilters;
+  // BFS distances from the center over the TRUSTED edge set — the depth
+  // control and the peripheral band both derive from real connectivity,
+  // never from entity type (REQ 16-18).
+  function netBfsDist(data, centerId) {
+    const adj = new Map();
+    (data.edges || []).forEach((e) => {
+      if (!adj.has(e.source)) adj.set(e.source, new Set());
+      if (!adj.has(e.target)) adj.set(e.target, new Set());
+      adj.get(e.source).add(e.target);
+      adj.get(e.target).add(e.source);
+    });
+    const dist = new Map([[centerId, 0]]);
+    const q = [centerId];
+    while (q.length) {
+      const u = q.shift();
+      const du = dist.get(u) + 1;
+      (adj.get(u) || []).forEach((v) => {
+        if (!dist.has(v)) { dist.set(v, du); q.push(v); }
+      });
+    }
+    return dist;
+  }
+  function netIsContextual(n) {
+    const ist = String(n.investigative_status || "").toUpperCase();
+    const mctx = String(n.mention_context || "").toUpperCase();
+    return ist === "CONTEXTUAL" || mctx === "CONTEXTUAL" || (n.node_kind === "entity" && ist === "MENTIONED_ONLY");
+  }
+  // Shortest path (BFS) from the center to a node over the VISIBLE edge
+  // set — returns node/edge id sets plus the readable path for the
+  // details drawer. Paths are real trusted connections, never invented.
+  function netPathFromCenter(data, edges, centerId, targetId) {
+    const adj = new Map(); const eid = new Map();
+    edges.forEach((e) => {
+      for (const [a, b] of [[e.source, e.target], [e.target, e.source]]) {
+        if (!adj.has(a)) adj.set(a, []);
+        adj.get(a).push(b);
+        if (!eid.has(a + "|" + b)) eid.set(a + "|" + b, e.id);
+      }
+    });
+    const prev = new Map([[centerId, null]]);
+    const q = [centerId];
+    while (q.length) {
+      const u = q.shift();
+      if (u === targetId) break;
+      (adj.get(u) || []).forEach((v) => { if (!prev.has(v)) { prev.set(v, u); q.push(v); } });
+    }
+    if (!prev.has(targetId)) return null;
+    const nodeIds = []; let cur = targetId;
+    while (cur !== null) { nodeIds.unshift(cur); cur = prev.get(cur); }
+    const edgeIds = [];
+    for (let i = 0; i < nodeIds.length - 1; i++) edgeIds.push(eid.get(nodeIds[i] + "|" + nodeIds[i + 1]));
+    const nodeNames = new Map(); data.nodes.forEach((n) => nodeNames.set(n.id, n.name));
+    const edgeTypes = new Map(); edges.forEach((e) => edgeTypes.set(e.id, e.relationship_type));
+    return {
+      node: targetId,
+      nodes: new Set(nodeIds),
+      edges: new Set(edgeIds),
+      path: nodeIds.map((id) => ({ id, name: nodeNames.get(id) || id })),
+      edgePath: edgeIds.map((id) => ({ id, type: edgeTypes.get(id) || "" })),
+    };
+  }
+  // Node click in case mode: select the node (highlight the path from the
+  // center) and let the shared drawer open its details (REQ 12, 28-29).
+  window.selectNetNode = (gid, refId) => {
+    if (!window.__netCaseData) return;
+    if (window.__netCenter && gid === window.__netCenter.id) { clearNetSelection(); return; }
+    window.__netSel = { id: gid, refId: refId || "" };
+    renderCaseGraph();
+  };
+  function clearNetSelection() {
+    window.__netSel = null;
+    window.__netSelPath = null;
+    renderCaseGraph();
+  }
+  window.clearNetSelection = clearNetSelection;
+  // Depth control (REQ 18): a real BFS traversal rebuild — 1 hop = direct
+  // relationships only, 2 hops = + one indirect layer, 3 hops = + two.
+  window.setNetDepth = (d) => {
+    window.__netDepth = d;
+    document.querySelectorAll("#graphPane .depth").forEach((b) => b.classList.toggle("active", +b.dataset.d === d));
+    renderCaseGraph();
+  };
+  function renderCaseGraph() {
+    const data = window.__netCaseData;
+    if (!data) return;
+    const f = window.__netFilters || {};
+    const hasFilter = !!(f.entityType || f.status || f.relType || f.search);
+    const center = window.__netCenter;
+    const depth = window.__netDepth || 2;
+    const tgl = window.__netToggles || { direct: true, indirect: true, contextual: true };
+    // Depth = actual graph traversal: nodes within `depth` hops stay in
+    // the rings; nodes beyond depth are hidden for this view; nodes with
+    // NO path to the center stay in the peripheral band — never deleted,
+    // never connected (REQ 14, 18).
+    const dist = netBfsDist(data, center.id);
+    let visNodes = data.nodes.filter((n) => n.id === center.id || (dist.has(n.id) && dist.get(n.id) <= depth) || !dist.has(n.id));
+    if (!tgl.contextual) visNodes = visNodes.filter((n) => n.id === center.id || !netIsContextual(n));
+    const visIds = new Set(visNodes.map((n) => n.id));
+    let visEdges = (data.edges || []).filter((e) => visIds.has(e.source) && visIds.has(e.target));
+    // View toggles (REQ 19): hide direct (center-touching) or indirect
+    // edges — a visualization filter only, trusted data is untouched.
+    if (!tgl.direct) visEdges = visEdges.filter((e) => e.source !== center.id && e.target !== center.id);
+    if (!tgl.indirect) visEdges = visEdges.filter((e) => e.source === center.id || e.target === center.id);
+    // Selection: shortest trusted path from the center to the chosen node.
+    let sel = null;
+    if (window.__netSel && window.__netSel.id && visIds.has(window.__netSel.id)) {
+      sel = netPathFromCenter(data, visEdges, center.id, window.__netSel.id);
+    }
+    window.__netSelPath = sel ? { path: sel.path, edgePath: sel.edgePath } : null;
+    renderGraphSVG({ nodes: visNodes, edges: visEdges, center: data.center }, "graphPane-svg", {
+      center,
+      filterActive: hasFilter,
+      activeNodes: hasFilter ? (window.__netActiveNodes || new Set()) : null,
+      activeEdges: hasFilter ? (window.__netActiveEdges || new Set()) : null,
+      directness: true,
+      selectable: true,
+      selNodes: sel ? sel.nodes : null,
+      selEdges: sel ? sel.edges : null,
+    });
+    // Live header: centered node, node/edge counts for the CURRENT view,
+    // depth and any active selection (REQ 17).
+    const ctr = document.getElementById("netGraphCtr");
+    if (ctr) ctr.innerHTML = `Centered on: <b>${esc(center.name || "")}</b> <span class="pill">${esc(center.type || "CASE")}</span>`;
+    const stt = document.getElementById("netGraphStats");
+    if (stt) stt.textContent = `${visNodes.length} nodes · ${visEdges.length} relationships · depth ${depth}${sel ? ` · path: ${sel.path.length} nodes` : ""}`;
+  }
+  window.__renderCaseGraph = renderCaseGraph;
+  document.getElementById("gfStatus").disabled = true; // case-mode only
+  document.getElementById("netCaseOpen").addEventListener("click", () => {
+    const v = document.getElementById("netCaseSelect").value;
+    if (v) loadCaseGraph(v);
+  });
+  document.getElementById("netCaseCenterReset").addEventListener("click", () => {
+    if (!window.__netCase || !window.__netCaseData) return;
+    const data = window.__netCaseData;
+    window.__netCenter = { id: data.center.id, name: data.center.name, type: "CASE", kind: "case" };
+    renderCurrentCenter();
+    renderCaseGraph();
+    toast("View returned to the case root.", "ok");
+  });
+  populateCaseSelect();
 
-  // components
-  try {
-    const c = await apiGet("/graph/analytics/components");
-    const comps = c.components || [];
-    document.getElementById("netComponents").innerHTML = comps.length
-      ? comps.map((x) => `<div class="card" style="display:inline-block;margin:0 8px 8px 0;min-width:180px"><div class="t">Component ${x.component_id}</div><div class="s">${x.node_count} nodes · ${x.edge_count} edges</div><div class="s">${Object.entries(x.dominant_entity_types || {}).map(([t, n]) => `${esc(t)} ${n}`).join(" · ")}</div></div>`).join("")
-      : '<span class="muted small">No trusted components (empty graph).</span>';
-  } catch (err) { document.getElementById("netComponents").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  // ---------- analytics scope (REQ 12-14): Current Case is the default;
+  // global analysis is an explicit opt-in — never a silent mix ----------
+  function currentScope() {
+    const mode = (document.querySelector('input[name="anaScope"]:checked') || {}).value || "case";
+    if (mode === "global") return { scope: "global", caseId: null };
+    return { scope: "case", caseId: window.__netCase ? window.__netCase.id : null };
+  }
+  function anaQ() { const sc = currentScope(); return sc.caseId ? qs({ case_id: sc.caseId }) : ""; }
 
-  // clusters
-  try {
-    const c = await apiGet("/graph/analytics/clusters");
-    const cls = c.clusters || [];
-    document.getElementById("netClusters").innerHTML = cls.length
-      ? cls.map((x) => `<div class="card mb"><div class="t">${esc(x.label)}</div>
-          <div class="s">${x.node_count} nodes · ${x.edge_count} relationships</div>
-          <div class="s">Dominant types: ${Object.entries(x.dominant_entity_types || {}).map(([t, n]) => `${esc(t)} ${n}`).join(" · ")}</div>
-          <div class="s">Cases: ${(x.associated_cases || []).map((id) => esc(id.split(":").pop())).join(", ") || "—"}</div>
-          <div class="s">Geography: ${(x.geographic_distribution || []).map(esc).join(", ") || "—"}</div>
-          <div class="s muted">A cluster is a network-analysis grouping — never a determination of criminality.</div></div>`).join("")
-      : '<span class="muted small">No network clusters detected.</span>';
-  } catch (err) { document.getElementById("netClusters").innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  async function loadNetStatsTab() {
+    const box = document.getElementById("netStats");
+    if (!box) return;
+    const sc = currentScope();
+    if (sc.scope === "case" && !sc.caseId) {
+      box.innerHTML = '<span class="muted small">Select a case to explore its network — statistics are scoped to the selected case.</span>';
+      return;
+    }
+    box.innerHTML = loadingState();
+    try {
+      const s = await apiGet("/graph/stats" + anaQ());
+      const byT = Object.entries(s.nodes_by_type || {}).map(([t, c]) => `<div class="kv"><b>${esc(t)}:</b> ${c}</div>`).join("");
+      box.innerHTML = `<div class="ana-scope-line mb">Scope: <b>${sc.scope === "case" ? "current case" : "entire database"}</b>${sc.caseId ? ` · <span class="mono">${esc(sc.caseId)}</span>` : ""}</div>
+        <div class="kv"><b>Total nodes:</b> ${s.total_nodes}</div><div class="kv"><b>Total edges:</b> ${s.total_edges}</div>` + (byT || '<span class="muted small">Empty trusted graph.</span>');
+    } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  }
+
+  // components (accordion, lazy) — REQ 19/20
+  window.netComponentLabel = (x) => {
+    const nodes = x.nodes || [];
+    const names = nodes.map((n) => n.name).filter(Boolean);
+    if (names.length <= 1) return names[0] || `Component ${x.component_id}`;
+    // A meaningful label from the entities actually contained in the
+    // component: prefer a real entity node over event/case descriptions.
+    const entityNode = nodes.find((n) => n.node_kind === "entity" && n.name) || nodes.find((n) => n.name);
+    return `${entityNode ? entityNode.name : names[0]} Network`;
+  };
+  async function loadNetComponentsTab() {
+    const box = document.getElementById("netComponents");
+    if (!box) return;
+    const sc = currentScope();
+    if (sc.scope === "case" && !sc.caseId) { box.innerHTML = '<span class="muted small">Select a case to explore its network.</span>'; return; }
+    box.innerHTML = loadingState();
+    try {
+      const c = await apiGet("/graph/analytics/components" + anaQ());
+      const comps = c.components || [];
+      box.innerHTML = comps.length
+        ? comps.map((x) => `<div class="card" style="display:inline-block;margin:0 8px 8px 0;min-width:210px;vertical-align:top">
+            <div class="t">${esc(window.netComponentLabel(x))}</div>
+            <div class="s">${x.node_count} nodes · ${x.edge_count} relationships</div>
+            <div class="s">${Object.entries(x.dominant_entity_types || {}).map(([t, n]) => `${esc(t)} ${n}`).join(" · ")}</div>
+            <div class="s muted">Connected component — a connectivity grouping, never a determination of criminality.</div></div>`).join("")
+        : '<span class="muted small">No trusted components (empty graph).</span>';
+    } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  }
+
+  // clusters (accordion, lazy) — REQ 15-18
+  async function loadNetClustersTab() {
+    const box = document.getElementById("netClusters");
+    if (!box) return;
+    const sc = currentScope();
+    if (sc.scope === "case" && !sc.caseId) { box.innerHTML = '<span class="muted small">Select a case to explore its network.</span>'; return; }
+    box.innerHTML = loadingState();
+    try {
+      const c = await apiGet("/graph/analytics/clusters" + anaQ());
+      const cls = c.clusters || [];
+      box.innerHTML = cls.length
+        ? cls.map((x, i) => {
+            const geo = x.geographic_distribution || [];
+            // Meaningful subtitle derived from real contained entities
+            // (REQ 18) — never invented semantic names.
+            const sub = geo.length ? geo[0] + " Network" : (x.associated_cases || []).length ? "Case-scoped network" : `Cluster ${i + 1}`;
+            return `<div class="card mb"><div class="t">Network Cluster ${i + 1} <span class="muted small">· ${esc(sub)}</span></div>
+              <div class="s">${x.node_count} nodes · ${x.edge_count} relationships</div>
+              <div class="s">Dominant types: ${Object.entries(x.dominant_entity_types || {}).map(([t, n]) => `${esc(t)} ${n}`).join(" · ")}</div>
+              <div class="s">Case: ${(x.associated_cases || []).map((id) => esc(id.split(":").pop())).join(", ") || "—"}</div>
+              <div class="s">Geography: ${geo.map(esc).join(", ") || "—"}</div>
+              <div class="s muted">A cluster is a network-analysis grouping — never a determination of criminality.</div></div>`;
+          }).join("")
+        : '<span class="muted small">No network clusters detected.</span>';
+    } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  }
+
+  // location network (accordion, lazy) — REQ 21-28, trusted data only
+  async function loadNetLocationsTab() {
+    const box = document.getElementById("netLocations");
+    if (!box) return;
+    const sc = currentScope();
+    if (sc.scope === "case" && !sc.caseId) { box.innerHTML = '<span class="muted small">Select a case to explore its location network.</span>'; return; }
+    if (sc.scope === "global" || !sc.caseId) {
+      box.innerHTML = '<span class="muted small">Location Network is a per-case analysis — select a case to open it.</span>';
+      return;
+    }
+    box.innerHTML = loadingState();
+    try {
+      const loc = await apiGet(`/graph/case/${sc.caseId}/locations`);
+      const nm = {};
+      ((window.__netCaseData && window.__netCaseData.nodes) || []).forEach((n) => { nm[n.id] = n.name; });
+      const lnames = (loc.locations || []).map((n) => n.name).filter(Boolean);
+      let html =
+        `<div class="kv"><b>Total locations:</b> ${loc.total_locations}</div>
+         <div class="kv"><b>Explicit location relationships:</b> ${loc.total_location_relationships}</div>
+         <div class="kv"><b>Events with explicit locations:</b> ${loc.total_events_with_locations}</div>
+         <div class="mt"><b>Locations:</b> ${lnames.map(esc).join(", ") || "—"}</div>`;
+      // Explicit location relationships — never inferred proximity edges.
+      html += (loc.location_relationships || []).length
+        ? `<div class="mt"><b>Explicit location relationships</b><div class="mt">${loc.location_relationships.map((e) => `<div class="kv">${esc(nm[e.source] || e.source)} — <b>${esc(e.relationship_type)}</b> → ${esc(nm[e.target] || e.target)}</div>`).join("")}</div></div>`
+        : '<div class="mt muted small">No explicit location relationships found for this case — declared locations are shown as nodes only, no edges are fabricated.</div>';
+      html += (loc.events_with_locations || []).length
+        ? `<div class="mt"><b>Events with locations</b><div class="mt">${loc.events_with_locations.map((ev) => `<div class="kv">${esc(ev.event_name)} <span class="pill">${esc(ev.event_type)}</span> → ${esc(ev.location_name)}</div>`).join("")}</div></div>`
+        : '<div class="mt muted small">No events with an explicit location link in this case.</div>';
+      // Compact location graph (fit in its own container, never clipped).
+      const locNodes = (loc.locations || []).map((n) => ({ ...n, node_kind: "entity", type: "LOCATION" }));
+      const locEdges = (loc.location_relationships || []).map((e) => ({ ...e, id: e.relationship_id || (e.source + "|" + e.target) }));
+      if (locNodes.length) {
+        html += `<div class="mt"><b>Location graph</b><div class="graph-wrap" id="netLocGraph" style="height:360px"></div></div>`;
+      }
+      box.innerHTML = html;
+      if (locNodes.length) {
+        renderGraphSVG({ nodes: locNodes, edges: locEdges, center: locNodes[0] }, "netLocGraph", { isMini: true });
+      }
+    } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+  }
+
+  // ---------- accordion behaviour (REQ 30-32): independent, keyboard
+  // accessible, lazy-rendered ----------
+  function bindAccordion(id) {
+    const head = document.getElementById(id);
+    if (!head) return;
+    head.addEventListener("click", () => {
+      const body = document.getElementById(head.dataset.body);
+      const open = body.hidden;
+      body.hidden = !open;
+      head.setAttribute("aria-expanded", String(open));
+      const arrow = head.querySelector(".acc-arrow");
+      if (arrow) arrow.textContent = open ? "▼" : "▶";
+      if (open) {
+        const fn = window[head.dataset.load];
+        if (typeof fn === "function") fn();
+      }
+    });
+  }
+  bindAccordion("accNetClusters");
+  bindAccordion("accNetComponents");
+  bindAccordion("accNetLocations");
+  document.querySelectorAll(".acc-head").forEach((h) => {
+    h.setAttribute("tabindex", "0");
+    h.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); h.click(); }
+    });
+  });
+
+  window.loadNetStatsTab = loadNetStatsTab;
+  window.loadNetComponentsTab = loadNetComponentsTab;
+  window.loadNetClustersTab = loadNetClustersTab;
+  window.loadNetLocationsTab = loadNetLocationsTab;
+
+  // Analysis-scope radios: switching scope re-renders the visible sections
+  // (Current Case is the default — no silent global mixing, REQ 14).
+  document.querySelectorAll('input[name="anaScope"]').forEach((r) => {
+    r.addEventListener("change", () => {
+      loadNetStatsTab();
+      ["accNetClusters", "accNetComponents", "accNetLocations"].forEach((id) => {
+        const head = document.getElementById(id);
+        if (head && !document.getElementById(head.dataset.body).hidden && window[head.dataset.load]) window[head.dataset.load]();
+      });
+    });
+  });
+  // Called when a case loads/clears so the visible sections stay scoped.
+  function refreshScopedAnalytics() {
+    loadNetStatsTab();
+    ["accNetClusters", "accNetComponents", "accNetLocations"].forEach((id) => {
+      const head = document.getElementById(id);
+      if (head && !document.getElementById(head.dataset.body).hidden && window[head.dataset.load]) window[head.dataset.load]();
+    });
+  }
+  window.__refreshScopedAnalytics = refreshScopedAnalytics;
+  loadNetStatsTab();
 
   // shortest path
   document.getElementById("pathBtn").addEventListener("click", async () => {
@@ -2136,6 +3245,7 @@ async function pageData(container) {
     <button class="tab-btn ${tab === "upload" ? "active" : ""}" data-tab="upload">Upload</button>
     <button class="tab-btn ${tab === "documents" ? "active" : ""}" data-tab="documents">Documents</button>
     <button class="tab-btn ${tab === "review" ? "active" : ""}" data-tab="review">Candidate review</button>
+    <button class="tab-btn ${tab === "duplicates" ? "active" : ""}" data-tab="duplicates">Duplicates</button>
   </div><div id="dataBody"></div>`;
   document.getElementById("dataTabs").addEventListener("click", (e) => {
     const b = e.target.closest(".tab-btn");
@@ -2223,8 +3333,14 @@ async function loadDataTab(tab) {
         const items = d.items || [];
         if (!items.length) { box.innerHTML = emptyState("📄", "No documents yet.", `<button class="btn primary sm" onclick="navigate('#/data/upload')">Upload a document</button>`); return; }
         box.innerHTML = `<div class="muted small mb">${d.total} document(s)</div><div style="overflow-x:auto"><table class="list">
-          <tr><th>Filename</th><th>Type</th><th>Size</th><th>Status</th><th>Uploaded</th><th>Duplicate of</th></tr>
-          ${items.map((x) => `<tr><td>${esc(x.filename)}</td><td>${esc(x.file_type)}</td><td>${fmtSize(x.file_size)}</td><td>${statusBadge(x.processing_status)}</td><td>${fmtDT(x.upload_timestamp)}</td><td class="mono small">${x.duplicate_of_document_id ? esc(x.duplicate_of_document_id) : "—"}</td></tr>`).join("")}
+          <tr><th>Filename</th><th>Type</th><th>Size</th><th>Status</th><th>Validation</th><th>Uploaded</th><th>Duplicate of</th></tr>
+          ${items.map((x) => {
+            const issues = x.structured_validation || [];
+            const valCell = issues.length
+              ? `<span class="pill" style="background:rgba(255,170,60,.15);color:var(--warn)" title="${esc(issues.map((i) => i.id + ': ' + i.message).join(' | '))}">⚠ ${issues.length} issue${issues.length > 1 ? "s" : ""}</span>`
+              : "—";
+            return `<tr><td>${esc(x.filename)}</td><td>${esc(x.file_type)}</td><td>${fmtSize(x.file_size)}</td><td>${statusBadge(x.processing_status)}</td><td>${valCell}</td><td>${fmtDT(x.upload_timestamp)}</td><td class="mono small">${x.duplicate_of_document_id ? esc(x.duplicate_of_document_id) : "—"}</td></tr>`;
+          }).join("")}
         </table></div>`;
       } catch (err) { box.innerHTML = errorState(err, "renderRoute()"); }
     }
@@ -2254,8 +3370,144 @@ async function loadDataTab(tab) {
     }
     document.getElementById("revApply").addEventListener("click", load);
     load();
+  } else if (tab === "duplicates") {
+    // Duplicate review (REQ 85-96): type-aware detection, three explicit
+    // states (CONFIRMED SAME / POSSIBLE DUPLICATE / CONFIRMED DISTINCT),
+    // and an audited merge that repoints every reference — nothing is
+    // silently merged and nothing is deleted.
+    body.innerHTML = `<div class="panel"><h2>Data quality — duplicate records</h2>
+      <div id="dupSummary" class="mt">${loadingState()}</div>
+      <div class="row mt">
+        <select id="dupFilter" style="max-width:220px" aria-label="Data quality filter"><option value="">All</option><option value="possible">Possible duplicates</option><option value="confirmed">Confirmed same</option><option value="superseded">Superseded records</option></select>
+        <select id="dupKind" style="max-width:220px" aria-label="Record type"><option value="">All record types</option><option value="entity">Entities</option><option value="case">Cases</option><option value="case_entity">CASE entity vs Case</option></select>
+        <button class="btn primary sm" id="dupLoad">Apply filter</button>
+      </div>
+      <div class="trusted-note mt">
+        <span>Merging/reconciliation is an explicit, audited decision. <b>CONFIRMED SAME</b> applies only to high-confidence deterministic matches (e.g. identical ENTITY_ID or a document anchored to the case). Anything ambiguous is <b>POSSIBLE DUPLICATE</b> for your review — the system never silently merges identity.</span>
+      </div>
+      <div id="dupList" class="mt">${loadingState()}</div></div>`;
+    async function loadSummary() {
+      const box = document.getElementById("dupSummary");
+      try {
+        const s = await apiGet("/duplicates/summary");
+        box.innerHTML = `<div class="kpis">
+          <div class="kpi"><div class="num">${s.total_records ?? "—"}</div><div class="lab">Total active records</div></div>
+          <div class="kpi amber"><div class="num">${s.possible_duplicate_groups ?? "—"}</div><div class="lab">Possible duplicate groups</div></div>
+          <div class="kpi"><div class="num">${s.confirmed_same_groups ?? "—"}</div><div class="lab">Confirmed same (deterministic)</div></div>
+          <div class="kpi purple"><div class="num">${s.case_entity_reconciliation_groups ?? "—"}</div><div class="lab">CASE entity ↔ Case reconciliations</div></div>
+          <div class="kpi green"><div class="num">${s.merged_records ?? "—"}</div><div class="lab">Merged / superseded</div></div>
+          <div class="kpi"><div class="num">${s.keep_separate_decisions ?? "—"}</div><div class="lab">Keep-separate decisions</div></div>
+        </div>`;
+      } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; }
+    }
+    async function load() {
+      const box = document.getElementById("dupList");
+      box.innerHTML = loadingState();
+      const filter = document.getElementById("dupFilter").value;
+      const kind = document.getElementById("dupKind").value;
+      // Superseded records: merged entities remain queryable for
+      // provenance (they never appear in active graphs/stats).
+      if (filter === "superseded") {
+        try {
+          const e = await apiGet("/entities" + qs({ status: "MERGED", limit: 200 }));
+          const items = e.items || [];
+          box.innerHTML = items.length
+            ? items.map((x) => `<div class="card mb"><div class="row"><div class="t">${esc(x.canonical_name)}</div><span class="pill">${esc(x.entity_type)}</span><span class="pill trusted">MERGED</span></div>
+                <div class="s mono small">${esc(x.entity_id)}${x.merged_into_id ? ` · merged into <b>${esc(x.merged_into_id)}</b>` : ""}${x.merged_into_case_id ? ` · reconciled into case <b>${esc(x.merged_into_case_id)}</b>` : ""}</div>
+                <div class="s muted">Superseded record — preserved for provenance, excluded from the active graph.</div></div>`).join("")
+            : emptyState("✓", "No superseded records.");
+          return;
+        } catch (err) { box.innerHTML = `<span class="muted small">${esc(err.message)}</span>`; return; }
+      }
+      try {
+        const d = await apiGet("/duplicates" + qs({ kind }));
+        let groups = d.groups || [];
+        if (filter === "possible") groups = groups.filter((g) => g.classification === "POSSIBLE_DUPLICATE");
+        if (filter === "confirmed") groups = groups.filter((g) => g.classification === "CONFIRMED_SAME");
+        if (!groups.length) {
+          box.innerHTML = emptyState("✓", "No duplicate records match these filters — names/types are normalized and checked deterministically.");
+          return;
+        }
+        box.innerHTML = groups.map((g) => {
+          if (g.kind === "case_entity") {
+            const r = (g.records || [])[0] || {};
+            return `<div class="card mb"><div class="row"><div class="t">CASE entity ↔ Case</div>
+              <span class="pill ${g.classification === "CONFIRMED_SAME" ? "trusted" : ""}">${esc(g.classification)}</span><span class="pill">CASE</span></div>
+              <div class="s mt"><b>Canonical Case:</b> ${esc((g.case || {}).name || "")} <span class="mono small">(${esc((g.case || {}).record_id || "")})</span></div>
+              <div class="s"><b>Legacy entity:</b> ${esc(r.name || "")} <span class="mono small">(${esc(r.record_id || "")})</span>${r.source_document_id ? ` · doc <span class="mono small">${esc(r.source_document_id)}</span>` : ""}</div>
+              <div class="s muted">Same logical Case: the legacy CASE-typed entity is the relationship-endpoint record created before case resolution existed.</div>
+              <div class="drawer-actions">
+                <button class="btn ok sm" onclick="reconcileCaseEntity('${esc(r.record_id)}','${esc((g.case || {}).record_id)}')">Reconcile with Case</button>
+                <button class="btn ghost sm" onclick="keepDupSeparate('case_entity','${esc(r.record_id)}','${esc((g.case || {}).record_id)}')">Keep separate</button>
+              </div>
+              <div class="s muted">Reconciliation marks the legacy entity MERGED into the canonical Case — every relationship and its provenance are preserved and the graph keeps ONE case node.</div></div>`;
+          }
+          return `<div class="card mb">
+            <div class="row"><div class="t">${esc(g.canonical_name)}</div>
+              <span class="pill ${g.classification === "CONFIRMED_SAME" ? "trusted" : ""}">${esc(g.classification)}</span>
+              <span class="pill">${esc(g.kind)}${g.entity_type ? " · " + esc(g.entity_type) : ""}</span></div>
+            <div class="s mt">${g.records.length} record(s) — ${g.similarity != null ? "similarity " + esc(String(g.similarity)) : ""}</div>
+            <div class="mt">${g.records.map((r) => `<div class="kv mono small">${esc(r.name)} <span class="muted">· ${esc(r.record_id)}</span>${r.source_document_id ? ` · doc <span class="muted">${esc(r.source_document_id)}</span>` : ""}${r.structured_id ? ` · <b>${esc(r.structured_id)}</b>` : ""}</div>`).join("")}</div>
+            <div class="drawer-actions">
+              <button class="btn ok sm" onclick="mergeDupPair('${g.kind}','${g.records[0].record_id}','${g.records[1].record_id}')" ${g.records.length > 2 ? "disabled title=\"Merge available for pairs\"" : ""}>Merge into canonical</button>
+              <button class="btn ghost sm" onclick="keepDupSeparate('${g.kind}','${g.records[0].record_id}','${g.records[1].record_id}')">Keep separate</button>
+            </div>
+            <div class="s muted">Merging repoints every relationship/fact/event reference to the canonical record, marks the duplicate MERGED and preserves all provenance — nothing is deleted.</div>
+          </div>`;
+        }).join("");
+      } catch (err) { box.innerHTML = errorState(err, "load()"); }
+    }
+    document.getElementById("dupLoad").addEventListener("click", load);
+    loadSummary();
+    load();
   }
 }
+
+// Global duplicate actions (merge / keep separate) — explicit human review.
+window.mergeDupPair = async (kind, canonicalId, duplicateId) => {
+  if (!confirm("Merge the duplicate into the canonical record? This repoints all references and preserves provenance. This action cannot be undone by the UI.")) return;
+  try {
+    const r = await apiJSON("POST", "/duplicates/" + kind + "s/merge", {
+      canonical_id: canonicalId,
+      duplicate_id: duplicateId,
+      reviewed_by: "web-investigator",
+      reason: "Confirmed same via duplicate review",
+    });
+    toast("Merged: " + (r.merged_id || ""), "ok");
+    renderRoute();
+  } catch (err) { toast(err.message, "bad"); }
+};
+// Reconcile a CASE-typed entity into its canonical Case (explicit human
+// review). The entity is marked MERGED (never an independent record), all
+// relationships and their provenance are preserved, and the graph keeps
+// ONE canonical CASE node.
+window.reconcileCaseEntity = async (entityId, caseId) => {
+  if (!confirm("Reconcile this legacy CASE entity into the canonical Case? Its relationships and provenance are preserved and the graph keeps ONE case node. This cannot be undone by the UI.")) return;
+  try {
+    const r = await apiJSON("POST", "/duplicates/case-entity/reconcile", {
+      entity_id: entityId,
+      case_id: caseId,
+      reviewed_by: "web-investigator",
+      reason: "CASE-typed entity confirmed as the canonical Case",
+    });
+    toast("Reconciled into case " + (r.case_id || ""), "ok");
+    renderRoute();
+  } catch (err) { toast(err.message, "bad"); }
+};
+window.keepDupSeparate = async (kind, recordA, recordB) => {
+  if (!confirm("Mark these records as CONFIRMED DISTINCT so they are no longer flagged as duplicates?")) return;
+  try {
+    await apiJSON("POST", "/duplicates/keep-separate", {
+      kind,
+      record_a_id: recordA,
+      record_b_id: recordB,
+      reviewed_by: "web-investigator",
+      reason: "Confirmed distinct via duplicate review",
+    });
+    toast("Records confirmed distinct.", "ok");
+    renderRoute();
+  } catch (err) { toast(err.message, "bad"); }
+};
 async function loadProcStats() {
   const el = document.getElementById("procStats");
   if (!el) return;

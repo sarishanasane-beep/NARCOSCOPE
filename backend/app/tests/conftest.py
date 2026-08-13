@@ -58,15 +58,19 @@ def _truncate_all() -> None:
             Fact,
             Relationship,
             Claim,
-            Evidence,
+            # events/entities now reference evidence and documents (direct
+            # source-document FKs), so they must be deleted before those
+            # tables. Order: Relationship -> Event/Entity -> Evidence ->
+            # Document -> Source.
             Event,
-            Case,
             Person,
             Organization,
             Location,
             Entity,
+            Evidence,
             Document,
             Source,
+            Case,
             AuditLog,
             # Part 3 tables: children before parents (SQLite FK enforcement
             # is ON). graph_changes.snapshot_id references graph_snapshots,

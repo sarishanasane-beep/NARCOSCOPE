@@ -40,6 +40,9 @@ _DAY_MONTH_YEAR = re.compile(
     rf"\b({MONTH_ALTERNATION})\s+(\d{{1,2}})(?:st|nd|rd|th)?,?\s+(\d{{4}})\b", re.IGNORECASE
 )
 _NUMERIC_DATE = re.compile(r"\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b")
+# Numeric month precision: 2026-05 / 2026/05 (year-month). A full numeric
+# date (DD-MM-YYYY) has three parts, so "2026-05" never collides with it.
+_YEAR_MONTH_NUMERIC = re.compile(r"\b(\d{4})[/-](\d{1,2})\b")
 _MONTH_YEAR = re.compile(rf"\b({MONTH_ALTERNATION})\s+(\d{{4}})\b", re.IGNORECASE)
 _BARE_YEAR = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
 
@@ -162,6 +165,12 @@ def extract_dates(text: str) -> list[DateInfo]:
     for m in _MONTH_YEAR.finditer(text):
         try:
             normalized = date(int(m.group(2)), _month_number(m.group(1)), 1)
+        except (ValueError, TypeError):
+            continue
+        found.append(DateInfo(normalized=normalized, original=m.group(0), precision=DATE_PRECISION_MONTH, span=_span_for(m)))
+    for m in _YEAR_MONTH_NUMERIC.finditer(text):
+        try:
+            normalized = date(int(m.group(1)), int(m.group(2)), 1)
         except (ValueError, TypeError):
             continue
         found.append(DateInfo(normalized=normalized, original=m.group(0), precision=DATE_PRECISION_MONTH, span=_span_for(m)))

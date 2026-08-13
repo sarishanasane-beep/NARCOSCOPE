@@ -52,6 +52,29 @@ ENTITY_TYPES = {
     "OTHER": "OTHER",
 }
 
+# Structured-document metadata carried through from the parser into the
+# candidate's proposed data (reviewer-facing; generic documents never set
+# these keys). The *_id keys preserve the authoritative structured IDs
+# (ENTITY_ID / EVENT_ID / RELATIONSHIP_ID / FACT_ID / CASE_ID) so the
+# reviewer can trace a candidate back to its declared block.
+_STRUCTURED_META_KEYS = (
+    "role", "status", "quantity", "registration", "value", "sentence",
+    "court", "location_type", "structured_kind", "description",
+    "mention_context", "duration", "organization", "accused_identity",
+    "time", "date_precision", "drug", "vehicle", "person",
+    "evidence_snippet", "type_conflicts", "investigative_status",
+    "entity_id", "event_id", "relationship_id", "fact_id",
+)
+
+
+def _structured_meta(extra: dict | None) -> dict:
+    result = {}
+    for key in _STRUCTURED_META_KEYS:
+        value = (extra or {}).get(key)
+        if value not in (None, ""):
+            result[key] = value
+    return result
+
 
 @dataclass
 class PersistStats:
@@ -149,7 +172,11 @@ def persist_extraction(
             # Reassign the whole dict: the JSON column has no mutation
             # tracking, so an in-place change would be silently lost at
             # commit and the new evidence reference would never persist.
-            existing.proposed_data = {**(existing.proposed_data or {}), "evidence_refs": refs}
+            existing.proposed_data = {
+                **(existing.proposed_data or {}),
+                **_structured_meta(entity.extra),
+                "evidence_refs": refs,
+            }
         else:
             db.add(
                 Candidate(
@@ -161,6 +188,7 @@ def persist_extraction(
                         "aliases": entity.aliases,
                         "parent_location": entity.extra.get("parent_location"),
                         "organization_type": entity.extra.get("organization_type"),
+                        **_structured_meta(entity.extra),
                         "evidence_refs": evidence_ids,
                     },
                     source_document_id=document.document_id,
@@ -210,6 +238,7 @@ def persist_extraction(
                     "date_precision": precision,
                     "location_name": event.location_name,
                     "case_ref": event.case_ref,
+                    **_structured_meta(event.extra),
                 },
                 source_document_id=document.document_id,
                 evidence_id=evidence.evidence_id,
@@ -234,6 +263,7 @@ def persist_extraction(
                     "target_name": relationship.target_name,
                     "target_type": relationship.target_type,
                     "classification": relationship.classification,
+                    **_structured_meta(relationship.extra),
                 },
                 source_document_id=document.document_id,
                 evidence_id=evidence.evidence_id,
@@ -258,6 +288,7 @@ def persist_extraction(
                     "object_name": fact.object_name,
                     "object_type": fact.object_type,
                     "case_ref": fact.case_ref,
+                    **_structured_meta(fact.extra),
                 },
                 source_document_id=document.document_id,
                 evidence_id=evidence.evidence_id,
@@ -281,6 +312,10 @@ def persist_extraction(
                     "action": case.action,
                     "existing_case_id": case.existing_case_id,
                     "jurisdiction": case.jurisdiction,
+                    "category": case.category,
+                    "status": case.status,
+                    "description": case.description,
+                    "structured_id": case.structured_id,
                 },
                 source_document_id=document.document_id,
                 evidence_id=evidence.evidence_id if evidence else None,
